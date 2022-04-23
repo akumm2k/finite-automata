@@ -40,10 +40,11 @@ matches str (Star a) =
         ]
 
 {-
-CFG:
+* CFG for regular expressions:
+
 char    - 'a' | ... | 'z'
 
-primary - eps | char | '(' expr ')' [Maybe] 
+primary - epsilon | char | '(' regexp ')' [Maybe] 
 
 factor - primary | primary '*'
             ~ primary(primary)*
@@ -51,7 +52,7 @@ factor - primary | primary '*'
 term  - factor | term '.' factor 
             ~ factor.(factor)* [Maybe]
 
-expr    - term | expr '|' term
+regexp    - term | regexp '|' term
 
 ---
 
