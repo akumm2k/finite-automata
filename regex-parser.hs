@@ -46,6 +46,7 @@ char    - 'a' | ... | 'z'
 primary - eps | char | '(' expr ')' [Maybe] 
 
 factor - primary | primary '*'
+            ~ primary(primary)*
 
 term  - factor | term '.' factor 
             ~ factor.(factor)* [Maybe]
@@ -66,9 +67,10 @@ primary (c : s)
 primary s = (Epsilon, Just s)
 
 factor_ext :: (Reg, String) -> (Reg, Maybe String)
-factor_ext (re, "") = (re, Nothing)
-factor_ext (Then a b, '*' : s) = (Then a (Star b), Just s)
+factor_ext (re, "") = (re, Nothing) -- end of str
+factor_ext (Then a b, '*' : s) = (Then a (Star b), Just s) -- prime(prime)*
 factor_ext (re, '*' : s) = (Star re, Just s)
+-- recurse `)` back to regexp_ext
 factor_ext (re, ')' : s) = (re, Just (')' : s))
 factor_ext (re, s) = 
     let (re2, Just t) = primary s
@@ -81,7 +83,7 @@ factor s =
     in factor_ext (re, t)
 
 term_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
-term_ext (re, Just "") = (re, Nothing)
+term_ext (re, Just "") = (re, Nothing) -- end of str
 term_ext (re, Just s) =
     let (re2, Just t) = primary s 
     in if s == t then (re, Just t) 
@@ -92,8 +94,9 @@ term :: String -> (Reg, Maybe String)
 term = term_ext . factor
 
 regexp_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
-regexp_ext (re, Just "") = (re, Nothing)
-regexp_ext (re, Just (')' : s)) = (re, Just (')' : s))
+regexp_ext (re, Just "") = (re, Nothing) -- end of str
+-- recurse `)` back to primary
+regexp_ext (re, Just (')' : s)) = (re, Just (')' : s)) 
 regexp_ext (re, Just ('|' : s)) =
     let (re2, t) = term s 
     in (Or re re2, t)
@@ -104,5 +107,7 @@ regexp :: String -> (Reg, Maybe String)
 regexp = regexp_ext . term
 
 get_reg :: String -> Reg 
-get_reg s = r 
-    where (r, _) = regexp s
+get_reg s = 
+    let (r, str) = regexp s 
+    in
+    if str == Nothing then r else error "something went wrong"
