@@ -67,28 +67,38 @@ primary (c : s)
     | is_alpha c = (Literal c, Just s)
 primary s = (Epsilon, Just s)
 
-factor_ext :: (Reg, String) -> (Reg, Maybe String)
-factor_ext (re, "") = (re, Nothing) -- end of str
-factor_ext (Then a b, '*' : s) = (Then a (Star b), Just s) -- prime(prime)*
-factor_ext (re, '*' : s) = (Star re, Just s)
+factor_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
+factor_ext (re, Just "") = (re, Nothing) -- end of str
+factor_ext (Then a b, Just ('*' : s)) = (Then a (Star b), Just s) -- prime(prime)*
+factor_ext (re, Just ('*' : s)) = (Star re, Just s)
 -- recurse `)` back to regexp_ext
-factor_ext (re, ')' : s) = (re, Just (')' : s))
-factor_ext (re, s) = 
-    let (re2, Just t) = primary s
-    in if s == t then (re, Just t) 
-        else factor_ext (Then re re2, t)
+factor_ext (re, Just (')' : s)) = (re, Just (')' : s))
+factor_ext (re, Just s) = 
+    let (re2, t) = primary s
+        final_opr = (Then re re2, Nothing)
+    in 
+        if t == Nothing then final_opr
+        else
+            if Just s == t then (re, t) 
+            else factor_ext (Then re re2, t)
+factor_ext (re, Nothing) = (re, Nothing)
 
 factor :: String -> (Reg, Maybe String)
 factor s =
-    let (re, Just t) = primary s 
+    let (re, t) = primary s 
     in factor_ext (re, t)
 
 term_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
 term_ext (re, Just "") = (re, Nothing) -- end of str
 term_ext (re, Just s) =
-    let (re2, Just t) = factor s 
-    in if s == t then (re, Just t) 
-    else term_ext (Then re re2, Just t)
+    let (re2, t) = factor s 
+        final_opr = (Then re re2, Nothing)
+    in 
+        if t == Nothing then final_opr
+        else 
+            if Just s == t then (re, t) 
+            else term_ext (Then re re2, t)
+
 term_ext (re, Nothing) = (re, Nothing)
 
 term :: String -> (Reg, Maybe String)
