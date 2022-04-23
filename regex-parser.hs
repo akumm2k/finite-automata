@@ -3,6 +3,7 @@ data Reg =
     Literal Char |
     Or Reg Reg |        -- (r1|r2)
     Then Reg Reg |      -- r1.r2
+    Opt Reg |           -- r?
     Star Reg            -- r*
 
 union_symb :: Char
@@ -17,6 +18,7 @@ instance Show Reg where
     show (Literal c) = [c]
     show (Or a b) = "(" ++ show a ++ "|" ++ show b ++ ")"
     show (Then a b) = show a ++ show b 
+    show (Opt a) = "(" ++ show a ++ ")" ++ "?"
     show (Star a) = "(" ++ show a ++ ")" ++ "*"
 
 splits :: Int -> Int -> String -> [(String, String)]
@@ -38,30 +40,30 @@ matches str (Star a) =
         s1 `matches` a && s2 `matches` (Star a) |
         (s1, s2) <- splits 1 (length str) str 
         ]
+matches str (Opt a) = (str == "") || str `matches` a
 
 {-
 * CFG for regular expressions:
-
 char    - 'a' | ... | 'z'
-
 primary - epsilon | char | '(' regexp ')' [Maybe] 
-
 factor - primary | primary '*'
             ~ primary(primary)*
-
+        | primary '?'
 term  - factor | term '.' factor 
             ~ factor.(factor)* [Maybe]
-
 regexp    - term | regexp '|' term
-
 ---
-
+* Enforced precedence / binding strength in decreasing order:
+'*', '?' - iteration, optional
+'.' - concat
+'|' - union
+---
 TODO: test parser
 -}
 
 primary :: String -> (Reg, Maybe String)
 primary ('(' : s) = 
-    let (re, Just (')' : t)) = regexp s 
+    let (re, Just (')' : t)) = regexp s -- ! returned str must begin w/ `)`
     in (re, Just t)
 primary (c : s) 
     | is_alpha c = (Literal c, Just s)
@@ -70,8 +72,10 @@ primary s = (Epsilon, Just s)
 factor_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
 factor_ext (re, Just "") = (re, Nothing) -- end of str
 factor_ext (Then a b, Just ('*' : s)) = (Then a (Star b), Just s) -- prime(prime)*
+factor_ext (Then a b, Just ('?' : s)) = (Then a (Opt b), Just s)
 factor_ext (re, Just ('*' : s)) = (Star re, Just s)
--- recurse `)` back to regexp_ext
+factor_ext (re, Just ('?' : s)) = (Opt re, Just s)
+-- propagate `)` back to regexp_ext
 factor_ext (re, Just (')' : s)) = (re, Just (')' : s))
 factor_ext (re, Just s) = 
     let (re2, t) = primary s
@@ -79,8 +83,9 @@ factor_ext (re, Just s) =
     in 
         if t == Nothing then final_opr
         else
+            -- str unchanged -> (head s == ')') is being passed to primary
             if Just s == t then (re, t) 
-            else factor_ext (Then re re2, t)
+            else factor_ext (Then re re2, t) -- else carry on parsing
 factor_ext (re, Nothing) = (re, Nothing)
 
 factor :: String -> (Reg, Maybe String)
@@ -96,9 +101,9 @@ term_ext (re, Just s) =
     in 
         if t == Nothing then final_opr
         else 
+            -- str unchanged -> (head s == ')') is being passed to primary
             if Just s == t then (re, t) 
-            else term_ext (Then re re2, t)
-
+            else term_ext (Then re re2, t) -- else carry on parsing
 term_ext (re, Nothing) = (re, Nothing)
 
 term :: String -> (Reg, Maybe String)
@@ -106,7 +111,7 @@ term = term_ext . factor
 
 regexp_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
 regexp_ext (re, Just "") = (re, Nothing) -- end of str
--- recurse `)` back to primary
+-- propagate `)` back to primary
 regexp_ext (re, Just (')' : s)) = (re, Just (')' : s)) 
 regexp_ext (re, Just ('|' : s)) =
     let (re2, t) = term s 
