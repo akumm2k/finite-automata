@@ -67,7 +67,16 @@ TODO: test parser
 primary :: String -> (Reg, Maybe String)
 primary ('(' : s) = 
     let (re, Just (')' : t)) = regexp s -- ! returned str must begin w/ `)`
-    in (re, Just t)
+        (c : r) = t
+    in if t /= "" 
+        then
+            case c of
+            -- fix for "(aa)*" -> "a(a)*"
+            '?' -> (Opt re, Just r) 
+            '*' -> (Star re, Just r)
+            _ -> (re, Just t)
+        else (re, Just t)
+
 primary (c : s) 
     | is_alpha c = (Literal c, Just s)
 primary s = (Epsilon, Just s)
