@@ -148,3 +148,9 @@ get_reg s =
     let (r, str) = regexp s 
     in
     if str == Nothing then r else error "something went wrong"
+
+test_reg :: [String]
+test_reg = 
+    let test_strs = ["(aa)*", "a(aa)*", "*a?", "xy(a?|b*c)cd"]  
+        test_strs2 = ["a??", "a**", "(a*)*", "?a??"]
+    in [re ++ " -> " ++ show (get_reg re) | re <- test_strs ++ test_strs2]
