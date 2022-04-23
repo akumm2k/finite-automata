@@ -7,3 +7,8 @@
 - [ ] converting from nfa -> dfa
 - [ ] converting from regex -> nfa
 - [ ] minimizing dfas
+
+## Questions
+
+- How to best test the parser?
+- Feedback: How to improve it?
