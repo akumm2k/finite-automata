@@ -56,7 +56,7 @@ regexp    - term | regexp '|' term
 
 ---
 
-TODO: fix parser
+TODO: test parser
 -}
 
 primary :: String -> (Reg, Maybe String)
@@ -86,7 +86,7 @@ factor s =
 term_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
 term_ext (re, Just "") = (re, Nothing) -- end of str
 term_ext (re, Just s) =
-    let (re2, Just t) = primary s 
+    let (re2, Just t) = factor s 
     in if s == t then (re, Just t) 
     else term_ext (Then re re2, Just t)
 term_ext (re, Nothing) = (re, Nothing)
