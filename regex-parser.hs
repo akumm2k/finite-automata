@@ -44,17 +44,14 @@ matches str (Opt a) = (str == "") || str `matches` a
 
 {-
 * CFG for regular expressions:
-char    - 'a' | ... | 'z'
-primary - epsilon | char | '(' regexp ')' [Maybe] 
+char -      'a' | ... | 'z'
+primary -   epsilon | char | '(' regexp ')'
 
-factor - primary | primary '*'
-            ~ primary(primary)*
-        | primary '?'
+factor -    primary | primary '*' ~ primary(primary)* | primary '?'
 
-term  - factor | term '.' factor 
-            ~ factor.(factor)* [Maybe]
+term -      factor | term '.' factor ~ factor.(factor)* 
 
-regexp    - term | regexp '|' term
+regexp -    term | regexp '|' term
 ---
 * Enforced precedence / binding strength in decreasing order:
 '*', '?' - iteration, optional
@@ -66,7 +63,7 @@ TODO: test parser
 
 primary :: String -> (Reg, Maybe String)
 primary ('(' : s) = 
-    let (re, Just (')' : t)) = regexp s -- ! returned str must begin w/ `)`
+    let (re, Just (')' : t)) = regexp s 
         (c : r) = t
     in 
         if t /= "" 
@@ -78,57 +75,73 @@ primary ('(' : s) =
             _ -> (re, Just t)
         else (re, Just t)
 
-primary (c : s) 
-    | is_alpha c = (Literal c, Just s)
+primary (c : s) | is_alpha c = (Literal c, Just s)
 primary s = (Epsilon, Just s)
 
+{-
+factor_ext recursively builds a factor that can't be 
+broken by primary concatenation, iteration or the optional operator.
+-}
 factor_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
 factor_ext (re, Just "") = (re, Nothing) -- end of str
-factor_ext (Then a b, Just ('*' : s)) = 
-    -- prime(prime)*
-    (Then a (Star b), Just s) 
+
+-- '*' and '?' bind to the last reg
+factor_ext (Then a b, Just ('*' : s)) = (Then a (Star b), Just s) 
 factor_ext (Then a b, Just ('?' : s)) = (Then a (Opt b), Just s)
 factor_ext (re, Just ('*' : s)) = (Star re, Just s)
 factor_ext (re, Just ('?' : s)) = (Opt re, Just s)
+
 factor_ext (re, Just (')' : s)) = 
     -- propagate `)` back to regexp_ext
     (re, Just (')' : s))
+
 factor_ext (re, Just s) = 
     let (re2, t) = primary s
         final_opr = (Then re re2, Nothing)
     in 
-        if t == Nothing then final_opr
+        if t == Nothing 
+            -- redundant : primary never returns Nothing
+            then final_opr 
         else
             if Just s == t 
-                -- str unchanged -> (head s == ')') is being passed to primary
+                -- str unchanged -> (head s == ')') to be passed to primary
                 then (re, t) 
             else -- carry on parsing
-                factor_ext (Then re re2, t) 
+                factor_ext (Then re re2, t) -- primary.(primary)*
+
 factor_ext (re, Nothing) = (re, Nothing)
 
 factor :: String -> (Reg, Maybe String)
-factor s =
-    let (re, t) = primary s 
-    in factor_ext (re, t)
+factor = factor_ext . primary
 
+{-
+term_ext recursively builds a term that can't be 
+broken by factor concatenation.
+-}
 term_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
 term_ext (re, Just "") = (re, Nothing) -- end of str
 term_ext (re, Just s) =
     let (re2, t) = factor s 
         final_opr = (Then re re2, Nothing)
     in 
-        if t == Nothing then final_opr
+        if t == Nothing 
+            -- factor may return Nothing
+            then final_opr
         else 
             if Just s == t 
-                -- str unchanged -> (head s == ')') is being passed to primary
+                -- str unchanged -> (head s == ')') to be passed to primary
                 then (re, t) 
             else -- carry on parsing 
-                term_ext (Then re re2, t) 
+                term_ext (Then re re2, t) -- factor.(factor)* 
+
 term_ext (re, Nothing) = (re, Nothing)
 
 term :: String -> (Reg, Maybe String)
 term = term_ext . factor
 
+{-
+regexp_ext helps build a regexp that can't be broken by the union '|' operator
+-}
 regexp_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
 regexp_ext (re, Just "") = (re, Nothing) -- end of str
 regexp_ext (re, Just (')' : s)) = 
