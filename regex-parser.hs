@@ -46,11 +46,14 @@ matches str (Opt a) = (str == "") || str `matches` a
 * CFG for regular expressions:
 char    - 'a' | ... | 'z'
 primary - epsilon | char | '(' regexp ')' [Maybe] 
+
 factor - primary | primary '*'
             ~ primary(primary)*
         | primary '?'
+
 term  - factor | term '.' factor 
             ~ factor.(factor)* [Maybe]
+            
 regexp    - term | regexp '|' term
 ---
 * Enforced precedence / binding strength in decreasing order:
@@ -69,6 +72,7 @@ primary (c : s)
     | is_alpha c = (Literal c, Just s)
 primary s = (Epsilon, Just s)
 
+<<<<<<< HEAD
 factor_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
 factor_ext (re, Just "") = (re, Nothing) -- end of str
 factor_ext (Then a b, Just ('*' : s)) = (Then a (Star b), Just s) -- prime(prime)*
@@ -87,6 +91,33 @@ factor_ext (re, Just s) =
             if Just s == t then (re, t) 
             else factor_ext (Then re re2, t) -- else carry on parsing
 factor_ext (re, Nothing) = (re, Nothing)
+||||||| parent of 93cc073 (Fix merge conflict after rebasing branch)
+factor_ext :: (Reg, String) -> (Reg, Maybe String)
+factor_ext (re, "") = (re, Nothing) -- end of str
+factor_ext (Then a b, '*' : s) = (Then a (Star b), Just s) -- prime(prime)*
+factor_ext (re, '*' : s) = (Star re, Just s)
+-- recurse `)` back to regexp_ext
+factor_ext (re, ')' : s) = (re, Just (')' : s))
+factor_ext (re, s) = 
+    let (re2, Just t) = primary s
+    in if s == t then (re, Just t) 
+        else factor_ext (Then re re2, t)
+=======
+factor_ext :: (Reg, String) -> (Reg, Maybe String)
+factor_ext (re, "") = (re, Nothing) -- end of str
+factor_ext (Then a b, '*' : s) = (Then a (Star b), Just s) -- prime(prime)*
+factor_ext (Then a b, '?' : s) = (Then a (Opt b), Just s)
+factor_ext (re, '*' : s) = (Star re, Just s)
+factor_ext (re, '?' : s) = (Opt re, Just s)
+-- recurse `)` back to regexp_ext
+factor_ext (re, ')' : s) = (re, Just (')' : s))
+factor_ext (re, s) = 
+    let (re2, Just t) = primary s
+    in 
+        -- nothing changed -> (head s == ')') is being passed to primary
+        if s == t then (re, Just t)  
+        else factor_ext (Then re re2, t)
+>>>>>>> 93cc073 (Fix merge conflict after rebasing branch)
 
 factor :: String -> (Reg, Maybe String)
 factor s =
@@ -96,6 +127,7 @@ factor s =
 term_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
 term_ext (re, Just "") = (re, Nothing) -- end of str
 term_ext (re, Just s) =
+<<<<<<< HEAD
     let (re2, t) = factor s 
         final_opr = (Then re re2, Nothing)
     in 
@@ -104,6 +136,16 @@ term_ext (re, Just s) =
             -- str unchanged -> (head s == ')') is being passed to primary
             if Just s == t then (re, t) 
             else term_ext (Then re re2, t) -- else carry on parsing
+||||||| parent of 93cc073 (Fix merge conflict after rebasing branch)
+    let (re2, Just t) = factor s 
+    in if s == t then (re, Just t) 
+    else term_ext (Then re re2, Just t)
+=======
+    -- nothing changed -> (head s == ')') is being passed to primary
+    let (re2, Just t) = factor s 
+    in if s == t then (re, Just t) 
+    else term_ext (Then re re2, Just t)
+>>>>>>> 93cc073 (Fix merge conflict after rebasing branch)
 term_ext (re, Nothing) = (re, Nothing)
 
 term :: String -> (Reg, Maybe String)
