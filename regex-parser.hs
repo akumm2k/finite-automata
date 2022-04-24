@@ -139,7 +139,7 @@ regexp_ext (re, (')' : s)) =
     (re, (')' : s)) 
 regexp_ext (re, ('|' : s)) =
     let (re2, t) = term s 
-    in (Or re re2, t)
+    in regexp_ext (Or re re2, t)
 regexp_ext (re, "") = (re, "")
 regexp_ext _ = error "bad syntax"
 
@@ -148,7 +148,7 @@ get_reg :: String -> Reg
 get_reg s = 
     let (re, str) = regexp s in
     if str == "" then re 
-    else error "something went wrong"
+    else error ("something went wrong. Unconsumed substring:" ++ str)
 
 test_reg :: [String]
 test_reg = 
