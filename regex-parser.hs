@@ -82,34 +82,29 @@ primary s = (Epsilon, s)
 factor_ext recursively builds a factor that can't be 
 broken by primary concatenation, iteration or the optional operator.
 -}
-factor_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
-factor_ext (re, Just "") = (re, Nothing) -- end of str
+factor_ext :: (Reg, String) -> (Reg, String)
 
 -- '*' and '?' bind to the last reg
-factor_ext (Then a b, Just ('*' : s)) = (Then a (Star b), Just s) 
-factor_ext (Then a b, Just ('?' : s)) = (Then a (Opt b), Just s)
-factor_ext (re, Just ('*' : s)) = (Star re, Just s)
-factor_ext (re, Just ('?' : s)) = (Opt re, Just s)
+factor_ext (Then a b, ('*' : s)) = (Then a (Star b), s) 
+factor_ext (Then a b, ('?' : s)) = (Then a (Opt b), s)
+factor_ext (re, ('*' : s)) = (Star re, s)
+factor_ext (re, ('?' : s)) = (Opt re, s)
 
-factor_ext (re, Just (')' : s)) = 
+factor_ext (re, (')' : s)) = 
     -- propagate `)` back to regexp_ext
-    (re, Just (')' : s))
+    (re, (')' : s))
 
-factor_ext (re, Just s) = 
+factor_ext (re, s) = 
     let (re2, t) = primary s
-        final_opr = (Then re re2, Nothing)
     in 
         if s == t 
             -- str unchanged -> (head s == ')') to be passed to primary
-            then (re, Just t) 
+            then (re, t) 
         else -- carry on parsing
-            factor_ext (Then re re2, Just t) -- primary.(primary)*
+            factor_ext (Then re re2, t) -- primary.(primary)*
 
-factor_ext (re, Nothing) = (re, Nothing)
-
-factor :: String -> (Reg, Maybe String)
-factor s = 
-    let (re, t) = primary s in factor_ext (re, Just t)
+factor :: String -> (Reg, String)
+factor = factor_ext . primary
 
 {-
 term_ext recursively builds a term that can't be 
@@ -121,20 +116,22 @@ term_ext (re, Just s) =
     let (re2, t) = factor s 
         final_opr = (Then re re2, Nothing)
     in 
-        if t == Nothing 
-            -- factor may return Nothing
+        if t == "" 
+            -- factor reached end of str
             then final_opr
         else 
-            if Just s == t 
+            if s == t 
                 -- str unchanged -> (head s == ')') to be passed to primary
-                then (re, t) 
+                then (re, Just t) 
             else -- carry on parsing 
-                term_ext (Then re re2, t) -- factor.(factor)* 
+                term_ext (Then re re2, Just t) -- factor.(factor)* 
 
 term_ext (re, Nothing) = (re, Nothing)
 
 term :: String -> (Reg, Maybe String)
-term = term_ext . factor
+term s = 
+    let (re, t) = factor s
+    in term_ext (re, Just t)
 
 {-
 regexp_ext helps build a regexp that can't be broken by the union '|' operator
