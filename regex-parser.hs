@@ -6,9 +6,6 @@ data Reg =
     Opt Reg |           -- r?
     Star Reg            -- r*
 
-is_alpha :: Char -> Bool
-is_alpha = \x -> 'a' <= x && x <= 'z'
-
 instance Show Reg where
     show Epsilon = []
     show (Literal c) = [c]
@@ -18,21 +15,23 @@ instance Show Reg where
     show (Star a) = "(" ++ show a ++ ")" ++ "*"
 
 splits :: Int -> Int -> String -> [(String, String)]
+-- list of all splits at k in [i .. j]
 splits i j str = 
-    [splitAt k str | k <- [i .. j]]
+    [splitAt k str | k <- [i .. j]] 
 
 matches :: String -> Reg -> Bool 
-matches str Epsilon = str == ""
-matches str (Literal c) = str == [c]
-matches str (Or a b) = str `matches` a || str `matches` b 
+-- matches str reg = tru if str `matches` reg
+matches str Epsilon = (str == "")
+matches str (Literal c) = (str == [c])
+matches str (Or a b) = (str `matches` a || str `matches` b)
 matches str (Then a b) = 
     or [
         s1 `matches` a && s2 `matches` b |
         (s1, s2) <- splits 0 (length str) str
         ]
 matches str (Star a) =
-    str `matches` Epsilon || -- avoid inf loop
-    or [
+    str `matches` Epsilon -- stop recursing
+    || or [
         s1 `matches` a && s2 `matches` (Star a) |
         (s1, s2) <- splits 1 (length str) str 
         ]
@@ -54,6 +53,9 @@ regexp -    term | regexp '|' term
 '.' - concat
 '|' - union
 -}
+
+is_alpha :: Char -> Bool
+is_alpha = \x -> 'a' <= x && x <= 'z'
 
 primary :: String -> (Reg, String)
 primary ('(' : s) = 
