@@ -58,11 +58,8 @@ regexp -    term | regexp '|' term
 primary :: String -> (Reg, String)
 primary ('(' : s) = 
     let (re, t) = regexp s in 
-    if t /= Nothing then 
-        let Just t' = t in 
-            if head t' == ')' then
-                primary_process (re, tail t')
-            else error "bad syntax"
+    if t /= "" && head t == ')' then 
+        primary_process (re, tail t)
     else error "bad syntax"
 
 primary (c : s) | is_alpha c = (Literal c, s)
@@ -128,30 +125,27 @@ term_ext (re, s) =
             term_ext (Then re re2, t) -- factor.(factor)* 
 
 
-regexp :: String -> (Reg, Maybe String)
-regexp s = 
-    let (re, t) = term s
-    in regexp_ext (re, Just t)
+regexp :: String -> (Reg, String)
+regexp = regexp_ext . term
 
 {-
 regexp_ext helps build a regexp that can't be broken by the union '|' operator
 -}
-regexp_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
-regexp_ext (re, Just "") = (re, Nothing) -- end of str
-regexp_ext (re, Just (')' : s)) = 
+regexp_ext :: (Reg, String) -> (Reg, String)
+regexp_ext (re, (')' : s)) = 
     -- propagate `)` back to primary
-    (re, Just (')' : s)) 
-regexp_ext (re, Just ('|' : s)) =
+    (re, (')' : s)) 
+regexp_ext (re, ('|' : s)) =
     let (re2, t) = term s 
-    in (Or re re2, Just t)
-regexp_ext (re, Nothing) = (re, Nothing)
+    in (Or re re2, t)
+regexp_ext (re, "") = (re, "")
 regexp_ext _ = error "bad syntax"
 
 
 get_reg :: String -> Reg 
 get_reg s = 
     let (re, str) = regexp s in
-    if str == Nothing then re 
+    if str == "" then re 
     else error "something went wrong"
 
 test_reg :: [String]
