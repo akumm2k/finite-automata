@@ -63,20 +63,27 @@ TODO: test parser
 
 primary :: String -> (Reg, String)
 primary ('(' : s) = 
-    let (re, Just (')' : t)) = regexp s 
-        (c : r) = t
-    in 
-        if t /= "" 
-        then
-            case c of
-            -- fix for "(aa)*" -> "a(a)*"
-            '?' -> (Opt re, r) 
-            '*' -> (Star re, r)
-            _ -> (re, t)
-        else (re, t)
+    let (re, t) = regexp s in 
+    if t /= Nothing then 
+    let Just t' = t in 
+        if head t' == ')' then
+            primary_process (re, tail t')
+        else error "bad syntax"
+    else error "bad syntax"
 
 primary (c : s) | is_alpha c = (Literal c, s)
 primary s = (Epsilon, s)
+
+primary_process :: (Reg, String) -> (Reg, String)
+primary_process (re, t) = 
+    let (c : r) = t in
+    if t == "" then (re, t)
+    else
+        case c of
+        -- fix for "(aa)*" -> "a(a)*"
+        '?' -> (Opt re, r) 
+        '*' -> (Star re, r)
+        _ -> (re, t)
 
 {-
 factor_ext recursively builds a factor that can't be 
