@@ -108,36 +108,30 @@ factor_ext (re, s) =
         factor_ext (Then re re2, t) -- primary.(primary)*
 
 
-term :: String -> (Reg, Maybe String)
+term :: String -> (Reg, String)
 term s = 
     let (re, t) = factor s
-    in term_ext (re, Just t)
+    in term_ext (re, t)
 
 {-
 term_ext recursively builds a term that can't be 
 broken by factor concatenation.
 -}
-term_ext :: (Reg, Maybe String) -> (Reg, Maybe String)
-term_ext (re, Just "") = (re, Nothing) -- end of str
-term_ext (re, Just s) =
+term_ext :: (Reg, String) -> (Reg, String)
+term_ext (re, s) =
     let (re2, t) = factor s 
-        final_opr = (Then re re2, Nothing)
     in 
-        if t == "" 
-            -- factor reached end of str
-            then final_opr
-        else 
-            if s == t 
-                -- str unchanged -> (head s == ')') to be passed to primary
-                then (re, Just t) 
-            else -- carry on parsing 
-                term_ext (Then re re2, Just t) -- factor.(factor)* 
-
-term_ext (re, Nothing) = (re, Nothing)
+        if s == t 
+            -- str unchanged -> (head s == ')') to be passed to primary
+            then (re, t) 
+        else -- carry on parsing 
+            term_ext (Then re re2, t) -- factor.(factor)* 
 
 
 regexp :: String -> (Reg, Maybe String)
-regexp = regexp_ext . term
+regexp s = 
+    let (re, t) = term s
+    in regexp_ext (re, Just t)
 
 {-
 regexp_ext helps build a regexp that can't be broken by the union '|' operator
@@ -149,7 +143,7 @@ regexp_ext (re, Just (')' : s)) =
     (re, Just (')' : s)) 
 regexp_ext (re, Just ('|' : s)) =
     let (re2, t) = term s 
-    in (Or re re2, t)
+    in (Or re re2, Just t)
 regexp_ext (re, Nothing) = (re, Nothing)
 regexp_ext _ = error "bad syntax"
 
