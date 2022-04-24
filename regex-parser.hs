@@ -158,6 +158,6 @@ get_reg s =
 
 test_reg :: [String]
 test_reg = 
-    let test_strs = ["(aa)*", "a(aa)*", "*a?", "xy(a?|b*c)cd"]  
-        test_strs2 = ["a??", "a**", "(a*)*", "?a??"]
+    let test_strs = ["(aa)*", "a(aa)*", "*a?", "xy(a?|b*c)cd"]
+        test_strs2 = ["a??", "a**", "(a*)*", "?a??", "axy(bc?d*|)g"]
     in [re ++ " -> " ++ show (get_reg re) | re <- test_strs ++ test_strs2]
