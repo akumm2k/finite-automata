@@ -57,18 +57,16 @@ regexp -    term | regexp '|' term
 '*', '?' - iteration, optional
 '.' - concat
 '|' - union
----
-TODO: test parser
 -}
 
 primary :: String -> (Reg, String)
 primary ('(' : s) = 
     let (re, t) = regexp s in 
     if t /= Nothing then 
-    let Just t' = t in 
-        if head t' == ')' then
-            primary_process (re, tail t')
-        else error "bad syntax"
+        let Just t' = t in 
+            if head t' == ')' then
+                primary_process (re, tail t')
+            else error "bad syntax"
     else error "bad syntax"
 
 primary (c : s) | is_alpha c = (Literal c, s)
@@ -84,6 +82,10 @@ primary_process (re, t) =
         '?' -> (Opt re, r) 
         '*' -> (Star re, r)
         _ -> (re, t)
+
+
+factor :: String -> (Reg, String)
+factor = factor_ext . primary
 
 {-
 factor_ext recursively builds a factor that can't be 
@@ -102,16 +104,18 @@ factor_ext (re, (')' : s)) =
     (re, (')' : s))
 
 factor_ext (re, s) = 
-    let (re2, t) = primary s
-    in 
-        if s == t 
-            -- str unchanged -> (head s == ')') to be passed to primary
-            then (re, t) 
-        else -- carry on parsing
-            factor_ext (Then re re2, t) -- primary.(primary)*
+    let (re2, t) = primary s in 
+    if s == t 
+        -- str unchanged -> (head s == ')') to be passed to primary
+        then (re, t) 
+    else -- carry on parsing
+        factor_ext (Then re re2, t) -- primary.(primary)*
 
-factor :: String -> (Reg, String)
-factor = factor_ext . primary
+
+term :: String -> (Reg, Maybe String)
+term s = 
+    let (re, t) = factor s
+    in term_ext (re, Just t)
 
 {-
 term_ext recursively builds a term that can't be 
@@ -135,10 +139,9 @@ term_ext (re, Just s) =
 
 term_ext (re, Nothing) = (re, Nothing)
 
-term :: String -> (Reg, Maybe String)
-term s = 
-    let (re, t) = factor s
-    in term_ext (re, Just t)
+
+regexp :: String -> (Reg, Maybe String)
+regexp = regexp_ext . term
 
 {-
 regexp_ext helps build a regexp that can't be broken by the union '|' operator
@@ -154,14 +157,12 @@ regexp_ext (re, Just ('|' : s)) =
 regexp_ext (re, Nothing) = (re, Nothing)
 regexp_ext _ = error "bad syntax"
 
-regexp :: String -> (Reg, Maybe String)
-regexp = regexp_ext . term
 
 get_reg :: String -> Reg 
 get_reg s = 
-    let (r, str) = regexp s 
-    in
-    if str == Nothing then r else error "something went wrong"
+    let (re, str) = regexp s in
+    if str == Nothing then re 
+    else error "something went wrong"
 
 test_reg :: [String]
 test_reg = 
