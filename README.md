@@ -12,3 +12,6 @@
 
 - How to best test the parser?
 - Feedback: How to improve it?
+- Why might have `Maybe` been useful?
+- How to disallow inputs like `??`, and `**`?
+- How to overwrite the implementation of `show` for Data.Set?
