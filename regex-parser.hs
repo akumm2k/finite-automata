@@ -6,10 +6,6 @@ data Reg =
     Opt Reg |           -- r?
     Star Reg            -- r*
 
-union_symb :: Char
-union_symb = '|' 
-star_symb :: Char
-star_symb = '*'
 is_alpha :: Char -> Bool
 is_alpha = \x -> 'a' <= x && x <= 'z'
 
