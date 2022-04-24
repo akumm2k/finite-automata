@@ -61,7 +61,7 @@ regexp -    term | regexp '|' term
 TODO: test parser
 -}
 
-primary :: String -> (Reg, Maybe String)
+primary :: String -> (Reg, String)
 primary ('(' : s) = 
     let (re, Just (')' : t)) = regexp s 
         (c : r) = t
@@ -70,13 +70,13 @@ primary ('(' : s) =
         then
             case c of
             -- fix for "(aa)*" -> "a(a)*"
-            '?' -> (Opt re, Just r) 
-            '*' -> (Star re, Just r)
-            _ -> (re, Just t)
-        else (re, Just t)
+            '?' -> (Opt re, r) 
+            '*' -> (Star re, r)
+            _ -> (re, t)
+        else (re, t)
 
-primary (c : s) | is_alpha c = (Literal c, Just s)
-primary s = (Epsilon, Just s)
+primary (c : s) | is_alpha c = (Literal c, s)
+primary s = (Epsilon, s)
 
 {-
 factor_ext recursively builds a factor that can't be 
@@ -99,20 +99,17 @@ factor_ext (re, Just s) =
     let (re2, t) = primary s
         final_opr = (Then re re2, Nothing)
     in 
-        if t == Nothing 
-            -- redundant : primary never returns Nothing
-            then final_opr 
-        else
-            if Just s == t 
-                -- str unchanged -> (head s == ')') to be passed to primary
-                then (re, t) 
-            else -- carry on parsing
-                factor_ext (Then re re2, t) -- primary.(primary)*
+        if s == t 
+            -- str unchanged -> (head s == ')') to be passed to primary
+            then (re, Just t) 
+        else -- carry on parsing
+            factor_ext (Then re re2, Just t) -- primary.(primary)*
 
 factor_ext (re, Nothing) = (re, Nothing)
 
 factor :: String -> (Reg, Maybe String)
-factor = factor_ext . primary
+factor s = 
+    let (re, t) = primary s in factor_ext (re, Just t)
 
 {-
 term_ext recursively builds a term that can't be 
