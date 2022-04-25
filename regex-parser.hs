@@ -156,8 +156,8 @@ get_reg s =
     if str == "" then re 
     else error ("something went wrong. Unconsumed substring:" ++ str)
 
-test_reg :: [String]
-test_reg = 
+test_reg_parse :: [String]
+test_reg_parse = 
     let test_strs = ["(aa)*", "a(aa)*", "*a?", "xy(a?|b*c)cd"]
         test_strs2 = ["a??", "a**", "(a*)*", "?a??", "axy(bc?d*|)g"]
     in [re ++ " -> " ++ show (get_reg re) | re <- test_strs ++ test_strs2]
