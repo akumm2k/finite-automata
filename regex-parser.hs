@@ -7,12 +7,12 @@ data Reg =
     Star Reg            -- r*
 
 instance Show Reg where
-    show Epsilon = []
-    show (Literal c) = [c]
-    show (Or a b) = "(" ++ show a ++ "|" ++ show b ++ ")"
-    show (Then a b) = show a ++ show b 
-    show (Opt a) = "(" ++ show a ++ ")" ++ "?"
-    show (Star a) = "(" ++ show a ++ ")" ++ "*"
+    show Epsilon        = []
+    show (Literal c)    = [c]
+    show (Or a b)       = "(" ++ show a ++ "|" ++ show b ++ ")"
+    show (Then a b)     = show a ++ show b 
+    show (Opt a)        = "(" ++ show a ++ ")" ++ "?"
+    show (Star a)       = "(" ++ show a ++ ")" ++ "*"
 
 {-
 matches_of [re :: Reg] s =
@@ -30,14 +30,15 @@ matches_of (Then a b) s = [u | t <- matches_of a s, u <- matches_of b t]
 
 matches_of (Opt a) s = matches_of a s ++ [s]
 matches_of (Star a) s = 
-    let m = removeItem s (matches_of a s)
+    let m = remove_item s (matches_of a s) -- rm s to prevent inf recursion
     in concat (map (matches_of (Star a)) m) ++ [s]
 
-removeItem :: Eq a => a -> [a] -> [a]
-removeItem _ [] = []
-removeItem x (y : ys) 
-    | x == y    = removeItem x ys
-    | otherwise = y : removeItem x ys
+-- remove all occurences of an item in a list
+remove_item :: Eq a => a -> [a] -> [a]
+remove_item _ [] = []
+remove_item x (y : ys) 
+    | x == y    = remove_item x ys
+    | otherwise = y : remove_item x ys
 
 {-
 get_matches_of [re :: String] str
@@ -62,7 +63,8 @@ matches s re_str =
 char -      'a' | ... | 'z'
 primary -   epsilon | char | '(' regexp ')'
 
-factor -    primary | primary '*' ~ primary(primary)* | primary '?'
+factor -    primary | factor . primary ~ primary(primary)* 
+            | primary '*' | primary '?'
 
 term -      factor | term '.' factor ~ factor.(factor)* 
 
@@ -96,9 +98,10 @@ primary_process (re, t) =
         -- fix for "(aa)*" -> "a(a)*"
         '?' -> (Opt re, r) 
         '*' -> (Star re, r)
-        _ -> (re, t)
+        _   -> (re, t)
 
 
+-- factor - primary | factor . primary | primary '*' | primary '?'
 factor :: String -> (Reg, String)
 factor = factor_ext . primary
 
@@ -127,6 +130,7 @@ factor_ext (re, s) =
         factor_ext (Then re re2, t) -- primary.(primary)*
 
 
+-- term - factor | term '.' factor 
 term :: String -> (Reg, String)
 term s = 
     let (re, t) = factor s
@@ -147,11 +151,13 @@ term_ext (re, s) =
             term_ext (Then re re2, t) -- factor.(factor)* 
 
 
+-- regexp -    term | regexp '|' term
 regexp :: String -> (Reg, String)
 regexp = regexp_ext . term
 
 {-
-regexp_ext helps build a regexp that can't be broken by the union '|' operator
+regexp_ext helps build a regexp that can't be 
+broken by the union '|' opr
 -}
 regexp_ext :: (Reg, String) -> (Reg, String)
 regexp_ext (re, (')' : s)) = 
@@ -163,13 +169,14 @@ regexp_ext (re, ('|' : s)) =
 regexp_ext (re, "") = (re, "")
 regexp_ext _ = error "bad syntax"
 
-
+-- get_reg str: parse str to get a Reg value
 get_reg :: String -> Reg 
 get_reg s = 
     let (re, str) = regexp s in
     if str == "" then re 
-    else error ("something went wrong. Unconsumed substring:" ++ str)
+    else error ("something went wrong. Unconsumed substring: " ++ str)
 
+-- test_reg_parse: test if the precedence is enforeced correctly 
 test_reg_parse :: [String]
 test_reg_parse = 
     let test_strs = ["(aa)*", "a(aa)*", "*a?", "xy(a?|b*c)cd"]
