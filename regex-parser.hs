@@ -1,3 +1,4 @@
+import Data.List
 data Reg =  
     Epsilon |
     Literal Char |
@@ -14,28 +15,33 @@ instance Show Reg where
     show (Opt a) = "(" ++ show a ++ ")" ++ "?"
     show (Star a) = "(" ++ show a ++ ")" ++ "*"
 
-splits :: Int -> Int -> String -> [(String, String)]
--- list of all splits at k in [i .. j]
-splits i j str = 
-    [splitAt k str | k <- [i .. j]] 
+{-
+matches_of re s =
+    [v | uv = s and u `matches` re]
+        v = "" -> s `matches` re
+-}
+matches_of :: Reg -> String -> [String]
+matches_of Epsilon s = [s]
 
-matches :: String -> Reg -> Bool 
--- matches str reg = tru if str `matches` reg
-matches str Epsilon = (str == "")
-matches str (Literal c) = (str == [c])
-matches str (Or a b) = (str `matches` a || str `matches` b)
-matches str (Then a b) = 
-    or [
-        s1 `matches` a && s2 `matches` b |
-        (s1, s2) <- splits 0 (length str) str
-        ]
-matches str (Star a) =
-    str `matches` Epsilon -- stop recursing
-    || or [
-        s1 `matches` a && s2 `matches` (Star a) |
-        (s1, s2) <- splits 1 (length str) str 
-        ]
-matches str (Opt a) = (str == "") || str `matches` a
+matches_of (Literal c) (d : s) | (c == d) = [s]
+matches_of (Literal c) s = []
+
+matches_of (Or a b) s = matches_of a s ++ matches_of b s 
+matches_of (Then a b) s = [u | t <- matches_of a s, u <- matches_of b t] 
+
+matches_of (Opt a) s = matches_of a s ++ [s]
+matches_of (Star a) s = 
+    let m = matches_of a s
+    in concat (map (matches_of (Star a)) m) ++ [s]
+
+get_matches_of :: String -> String -> [String]
+get_matches_of re str = matches_of (get_reg re) str
+
+matches :: String -> String -> Bool 
+matches s re_str = 
+    let re = get_reg re_str
+        m = matches_of re s
+    in not (null m) && "" `elem` m
 
 {-
 * CFG for regular expressions:
