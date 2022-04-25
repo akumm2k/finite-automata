@@ -30,8 +30,15 @@ matches_of (Then a b) s = [u | t <- matches_of a s, u <- matches_of b t]
 
 matches_of (Opt a) s = matches_of a s ++ [s]
 matches_of (Star a) s = 
-    let m = matches_of a s
+    let m = removeItem s (matches_of a s)
     in concat (map (matches_of (Star a)) m) ++ [s]
+
+removeItem :: Eq a => a -> [a] -> [a]
+removeItem _ [] = []
+removeItem x (y : ys) 
+    | x == y    = removeItem x ys
+    | otherwise = y : removeItem x ys
+
 {-
 get_matches_of [re :: String] str
     `matches_of` but takes a regex `re` as string
