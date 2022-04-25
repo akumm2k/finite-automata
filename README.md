@@ -15,4 +15,6 @@
 - Why might have `Maybe` been useful?
 - How to disallow inputs like `??`, and `**`?
 - Regexps like `((a|b)*)*` cause an inf recursion in `matches_of`. How to get rid of it?
+    * removing the input str as an arg in the recurivse call works. 
+      Is there a more natural way to implement `matches_of (Star a)`?
 - How to overwrite the implementation of `show` for Data.Set?
