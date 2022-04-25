@@ -1,4 +1,3 @@
-import Data.List
 data Reg =  
     Epsilon |
     Literal Char |
@@ -16,7 +15,7 @@ instance Show Reg where
     show (Star a) = "(" ++ show a ++ ")" ++ "*"
 
 {-
-matches_of re s =
+matches_of [re :: Reg] s =
     [v | uv = s and u `matches` re]
         v = "" -> s `matches` re
 -}
@@ -33,15 +32,23 @@ matches_of (Opt a) s = matches_of a s ++ [s]
 matches_of (Star a) s = 
     let m = matches_of a s
     in concat (map (matches_of (Star a)) m) ++ [s]
-
+{-
+get_matches_of [re :: String] str
+    `matches_of` but takes a regex `re` as string
+    and applies `matches_of` to the parsed regex
+-}
 get_matches_of :: String -> String -> [String]
-get_matches_of re str = matches_of (get_reg re) str
+get_matches_of re = matches_of (get_reg re)
 
+{-
+str `matches` re
+    if `str` matches the regex string`re`
+    * Recall: "" in matches_of re str -> str was matched
+-}
 matches :: String -> String -> Bool 
 matches s re_str = 
     let re = get_reg re_str
-        m = matches_of re s
-    in not (null m) && "" `elem` m
+    in "" `elem` (matches_of re s)
 
 {-
 * CFG for regular expressions:
