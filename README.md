@@ -14,8 +14,8 @@
 - Feedback: How to improve it?
 - Why might have `Maybe` been useful?
 - How to disallow inputs like `??`, and `**`?
-- Regexps like `((a|b)*)*` cause an inf recursion in `matches_of`. How to get rid of it?
+- Regexps like `((a|b)*)*` cause an inf recursion in `left_derivative`. How to get rid of it?
     * removing the input str as an arg in the recurivse call works. 
-      Is there a more natural way to implement `matches_of (Star a)`?
-- What is the prepending vs appending runtime trade-off in `matches_of`?
+      Is there a more natural way to implement `left_derivative (Star a)`?
+- What is the prepending vs appending runtime trade-off in `left_derivative`?
 - How to overwrite the implementation of `show` for Data.Set?

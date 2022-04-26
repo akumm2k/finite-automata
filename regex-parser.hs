@@ -15,23 +15,26 @@ instance Show Reg where
     show (Star a)       = "(" ++ show a ++ ")" ++ "*"
 
 {-
-matches_of [re :: Reg] s =
-    [v | uv = s and u `matches` re]
-        v = "" -> s `matches` re
+left_derivative [re :: Reg] s =
+    L(re) \ {s} =
+    [v | uv = s and u in L(re)]
+        v = "" <-> uv = u = s in L(re) <-> s `matches` re
 -}
-matches_of :: Reg -> String -> [String]
-matches_of Epsilon s = [s]
+left_derivative :: Reg -> String -> [String]
+left_derivative Epsilon s = [s]
 
-matches_of (Literal c) (d : s) | (c == d) = [s]
-matches_of (Literal c) s = []
+left_derivative (Literal c) (d : s) | (c == d) = [s]
+left_derivative (Literal c) s = []
 
-matches_of (Or a b) s = matches_of a s ++ matches_of b s 
-matches_of (Then a b) s = [u | t <- matches_of a s, u <- matches_of b t] 
+left_derivative (Or a b) s = left_derivative a s ++ left_derivative b s 
+left_derivative (Then a b) s = 
+    [u | t <- left_derivative a s, u <- left_derivative b t] 
 
-matches_of (Opt a) s = matches_of a s ++ [s]
-matches_of (Star a) s = 
-    let m = remove_item s (matches_of a s) -- rm s to prevent inf recursion
-    in concat (map (matches_of (Star a)) m) ++ [s]
+left_derivative (Opt a) s = left_derivative a s ++ [s]
+left_derivative (Star a) s = 
+    let m = remove_item s (left_derivative a s) 
+        -- rm s to prevent inf recursion
+    in concat (map (left_derivative (Star a)) m) ++ [s]
 
 -- remove all occurences of an item in a list
 remove_item :: Eq a => a -> [a] -> [a]
@@ -41,22 +44,22 @@ remove_item x (y : ys)
     | otherwise = y : remove_item x ys
 
 {-
-get_matches_of [re :: String] str
-    `matches_of` but takes a regex `re` as string
-    and applies `matches_of` to the parsed regex
+get_left_derivative [re :: String] str
+    `left_derivative` but takes a regex `re` as string
+    and applies `left_derivative` to the parsed regex
 -}
-get_matches_of :: String -> String -> [String]
-get_matches_of re = matches_of (get_reg re)
+get_left_derivative :: String -> String -> [String]
+get_left_derivative re = left_derivative (get_reg re)
 
 {-
 str `matches` re
-    if `str` matches the regex string`re`
-    * Recall: "" in matches_of re str -> str was matched
+    if `str` matches the regex string `re`
+    * Recall: "" in left_derivative re str -> str was matched
 -}
 matches :: String -> String -> Bool 
 matches s re_str = 
     let re = get_reg re_str
-    in "" `elem` (matches_of re s)
+    in "" `elem` (left_derivative re s)
 
 {-
 * CFG for regular expressions:
