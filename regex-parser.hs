@@ -64,18 +64,18 @@ matches s re_str =
 {-
 * CFG for regular expressions:
 char -      'a' | ... | 'z'
-primary -   epsilon | char | '(' regexp ')'
+primary -   epsilon | char | '(' '.' regexp '.' ')'
 
-factor -    primary | factor . primary ~ primary(primary)* 
+factor -    primary | factor '.' primary    ~ primary '.' (primary) '*' 
             | primary '*' | primary '?'
 
-term -      factor | term '.' factor ~ factor.(factor)* 
+term -      factor | term '.' factor        ~ factor '.' (factor) '*' 
 
 regexp -    term | regexp '|' term
 ---
 * Enforced precedence / binding strength in decreasing order:
 '*', '?' - iteration, optional
-'.' - concat
+'.' - concatenation
 '|' - union
 -}
 
