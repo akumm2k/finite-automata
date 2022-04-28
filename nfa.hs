@@ -35,6 +35,12 @@ lambda_closure :: Eq a => a -> NFA a -> [a]
 lambda_closure q' (NFA q delta q0 f) = 
     q' : concat [r | (Emove p r) <- delta, p == q']
 
+
+{-
+Test NFA:
+accepts `[+-]?[1-9]*\.[1-9]*`
+-}
+
 data ExtMove a = ExtMove a String [a]
 
 q :: [Int]
