@@ -9,7 +9,7 @@
 -}
 
 data DFA a = 
-    DFA a [(DMove a)] a [a]
+    DFA [a] [(DMove a)] a [a]
 
 data DMove a =
     DMove a Char a
@@ -26,5 +26,5 @@ instance (Show a) =>  Show (DFA a) where
         "q0: " ++ show q0 ++ " \n" ++
         "F: " ++ show f 
 
-build_nfa :: Ord a => a -> [DMove a] -> a -> [a] -> DFA a
-build_nfa q delta q0 f = DFA q delta q0 f
+build_dfa :: Ord a => [a] -> [DMove a] -> a -> [a] -> DFA a
+build_dfa q delta q0 f = DFA q delta q0 f
