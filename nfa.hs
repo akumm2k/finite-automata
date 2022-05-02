@@ -42,6 +42,10 @@ accepts `[+-]?[1-9]*\.[1-9]*`
 -}
 
 data ExtMove a = ExtMove a String [a]
+{- 
+ExtendedMove NOT by words, but by multiple symbols 
+transitioning to the same state
+-}
 
 q :: [Int]
 q = [0 .. 5]
@@ -61,6 +65,7 @@ q0 = 0
 f :: [Int]
 f = [5]
 
+-- split an extended move into a non deterministive moves
 extMove_to_move :: [ExtMove a] -> [NMove a]
 extMove_to_move moves = 
     [NMove p c q | (ExtMove p cs q) <- moves, cs /= "", c <- cs]
