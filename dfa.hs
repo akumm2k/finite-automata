@@ -1,3 +1,4 @@
+import Debug.Trace
 {-
 * DFA: 
 (
@@ -9,10 +10,10 @@
 -}
 
 data DFA a = 
-    DFA [a] [(DMove a)] a [a]
+    DFA {states :: [a], delta :: [(DMove a)], start :: a, final :: [a]}
 
 data DMove a =
-    DMove a Char a
+    DMove {from :: a, char :: Char, to :: a}
     deriving Eq
 
 instance (Show a) => Show (DMove a) where 
@@ -29,12 +30,32 @@ instance (Show a) =>  Show (DFA a) where
 build_dfa :: Ord a => [a] -> [DMove a] -> a -> [a] -> DFA a
 build_dfa q delta q0 f = DFA q delta q0 f
 
+delta_star' :: (Eq a, Show a) => String -> a -> DFA a -> Maybe a 
+delta_star' [] f _ = Just f 
+delta_star' (c : cs) q dfa = 
+    let next = [p | (DMove q' c' p) <- delta dfa, q == q', c == c']
+    in case next of 
+        [] -> Nothing 
+        [p] -> delta_star' cs p dfa 
+        _ -> error ("Non-deterministic move detected " ++ show q 
+            ++ " - " ++ [c] ++ " -> " ++ show next)
+
+delta_star :: (Eq a, Show a) => String -> DFA a -> Maybe a 
+delta_star s dfa = delta_star' (reverse s) (start dfa) dfa
+
+accepts :: (Eq a, Show a) => DFA a -> String -> Bool 
+accepts dfa s = 
+    let mq = delta_star s dfa 
+    in case mq of 
+        Just q -> q `elem` (final dfa)
+        Nothing -> False
+
 -- L(my_dfa) = {w | w \in {0, 1}*, |w|1 % 3 == 0}
 q :: [Int]
 q = [0, 1, 2]
 
-delta :: [DMove Int]
-delta = [DMove x '0' x | x <- q] ++ [
+delta' :: [DMove Int]
+delta' = [DMove x '0' x | x <- q] ++ [
     DMove 0 '1' 1,
     DMove 1 '1' 2,
     DMove 2 '1' 0
@@ -47,4 +68,4 @@ f :: [Int]
 f = [0]
 
 my_dfa :: DFA Int
-my_dfa = DFA q delta q0 f
+my_dfa = DFA q delta' q0 f
