@@ -51,21 +51,21 @@ accepts dfa s =
         Nothing -> False
 
 -- L(my_dfa) = {w | w \in {0, 1}*, |w|1 % 3 == 0}
-q :: [Int]
-q = [0, 1, 2]
+my_q :: [Int]
+my_q = [0, 1, 2]
 
-delta' :: [DMove Int]
-delta' = [DMove x '0' x | x <- q] ++ [
+my_delta :: [DMove Int]
+my_delta = [DMove x '0' x | x <- my_q] ++ [
     DMove 0 '1' 1,
     DMove 1 '1' 2,
     DMove 2 '1' 0
     ]
 
-q0 :: Int
-q0 = 0 
+my_q0 :: Int
+my_q0 = 0 
 
-f :: [Int]
-f = [0]
+my_f :: [Int]
+my_f = [0]
 
 my_dfa :: DFA Int
-my_dfa = DFA q delta' q0 f
+my_dfa = DFA my_q my_delta my_q0 my_f
