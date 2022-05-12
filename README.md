@@ -10,10 +10,11 @@
 
 ## Questions
 
-
+- How to better structure the nfa and dfa implementation, such that
+  they implement the same methods for accessing states, delta, start and
+  final states?
 
 ## Questions Archive
-
 
 ### Regex Parser
 
