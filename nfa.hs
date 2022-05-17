@@ -1,3 +1,5 @@
+import Data.List
+import Debug.Trace
 {-
 * NFA: 
 (
@@ -7,8 +9,9 @@
     set of final states
 )
 -}
+
 data NFA a = 
-    NFA [a] [(NMove a)] a [a]
+    NFA {statesN :: [a], moves :: [(NMove a)], startN :: a, finalN :: [a]}
 
 data NMove a =
     NMove a Char [a] |
@@ -31,10 +34,42 @@ instance (Show a) =>  Show (NFA a) where
 build_nfa :: Ord a => [a] -> [NMove a] -> a -> [a] -> NFA a
 build_nfa q delta q0 f = NFA q delta q0 f
 
-lambda_closure :: Eq a => a -> NFA a -> [a]
-lambda_closure q' (NFA q delta q0 f) = 
+delta :: Eq a => NFA a -> Char -> a -> [a]
+delta nfa c p = nub $
+    let qs = concat [q | (NMove p' c' q) <- moves nfa, c' == c, p == p']
+    in concatMap (lambda_closure nfa) qs
+
+{-
+q \in (lambda_closure q)
+for all r s.t. Emove q r, r \in (lambda_closure q)
+-}
+lambda_closure :: Eq a => NFA a -> a -> [a]
+lambda_closure (NFA q delta q0 f) q' = 
     q' : concat [r | (Emove p r) <- delta, p == q']
 
+{-
+delta_star(q, wa) | a :: Char, w :: String
+    = lambda_closure (delta(p, a) for all p in delta_star(q, w))
+-}
+delta_star' :: (Eq a, Show a) => [a] -> NFA a -> String -> Maybe [a] 
+delta_star' fs _ [] = Just fs
+delta_star' qs nfa (c : cs) = 
+    let qs' = nub $ concatMap (lambda_closure nfa) qs
+        next = concatMap (delta nfa c) qs'
+    in 
+        case next of 
+        [] -> Nothing 
+        _ -> delta_star' next nfa cs
+
+delta_star :: (Eq a, Show a) =>  NFA a -> String -> Maybe [a] 
+delta_star nfa = delta_star' [startN nfa] nfa
+
+accepts :: (Eq a, Show a) => NFA a -> String -> Bool 
+accepts nfa s = 
+    let reached = delta_star nfa s 
+    in case reached of 
+        Just qs -> or [f `elem` qs | f <- finalN nfa]
+        Nothing -> False
 
 {-
 Test NFA:
@@ -47,10 +82,10 @@ ExtendedMove NOT by words, but by multiple symbols
 transitioning to the same state
 -}
 
-q :: [Int]
-q = [0 .. 5]
-delta :: [ExtMove Int]
-delta = [
+my_q :: [Int]
+my_q = [0 .. 5]
+my_delta :: [ExtMove Int]
+my_delta = [
     ExtMove 0 "" [1],
     ExtMove 0 "+-" [1],
     ExtMove 1 "." [2],
@@ -59,11 +94,11 @@ delta = [
     ExtMove 3 "" [5],
     ExtMove 4 "." [3]
     ]
-q0 :: Int
-q0 = 0 
+my_q0 :: Int
+my_q0 = 0 
 
-f :: [Int]
-f = [5]
+my_f :: [Int]
+my_f = [5]
 
 -- split an extended move into a non deterministive moves
 extMove_to_move :: [ExtMove a] -> [NMove a]
@@ -73,4 +108,4 @@ extMove_to_move moves =
     [Emove p q | (ExtMove p "" q) <- moves]
 
 my_nfa :: NFA Int
-my_nfa = NFA q (extMove_to_move delta) q0 f 
+my_nfa = NFA my_q (extMove_to_move my_delta) my_q0 my_f 
