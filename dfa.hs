@@ -30,22 +30,22 @@ instance (Show a) =>  Show (DFA a) where
 build_dfa :: Ord a => [a] -> [Move a] -> a -> [a] -> DFA a
 build_dfa q delta q0 f = DFA q delta q0 f
 
-delta_star' :: (Eq a, Show a) => String -> a -> DFA a -> Maybe a 
-delta_star' [] f _ = Just f 
-delta_star' (c : cs) q dfa = 
+delta_star' :: (Eq a, Show a) => a -> DFA a -> String -> Maybe a 
+delta_star' f _ [] = Just f 
+delta_star' q dfa (c : cs) = 
     let next = [p | (Move q' c' p) <- delta dfa, q == q', c == c']
     in case next of 
         [] -> Nothing 
-        [p] -> delta_star' cs p dfa 
+        [p] -> delta_star' p dfa cs
         _ -> error ("Non-deterministic move detected " ++ show q 
             ++ " - " ++ [c] ++ " -> " ++ show next)
 
-delta_star :: (Eq a, Show a) => String -> DFA a -> Maybe a 
-delta_star s dfa = delta_star' (reverse s) (start dfa) dfa
+delta_star :: (Eq a, Show a) => DFA a -> String -> Maybe a 
+delta_star dfa = delta_star' (start dfa) dfa
 
 acceptsD :: (Eq a, Show a) => DFA a -> String -> Bool 
 acceptsD dfa s = 
-    let mq = delta_star s dfa 
+    let mq = delta_star dfa s 
     in case mq of 
         Just q -> q `elem` (final dfa)
         Nothing -> False
