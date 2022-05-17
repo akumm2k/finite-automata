@@ -1,4 +1,5 @@
 import Debug.Trace
+import Automaton
 {-
 * DFA: 
 (
@@ -9,16 +10,15 @@ import Debug.Trace
 )
 -}
 
+instance Automaton DFA where
+    states = statesD 
+    start = startD 
+    final = finalD 
+    delta = deltaD 
+    accepts = acceptsD
+
 data DFA a = 
-    DFA {states :: [a], delta :: [(DMove a)], start :: a, final :: [a]}
-
-data DMove a =
-    DMove {from :: a, char :: Char, to :: a}
-    deriving Eq
-
-instance (Show a) => Show (DMove a) where 
-    show (DMove q c p) = 
-        "(" ++ show q ++ " - " ++ [c] ++ " -> " ++ show p ++ ")"
+    DFA {statesD :: [a], deltaD :: [(Move a)], startD :: a, finalD :: [a]}
 
 instance (Show a) =>  Show (DFA a) where 
     show (DFA q delta q0 f) = 
@@ -27,13 +27,13 @@ instance (Show a) =>  Show (DFA a) where
         "q0: " ++ show q0 ++ " \n" ++
         "F: " ++ show f 
 
-build_dfa :: Ord a => [a] -> [DMove a] -> a -> [a] -> DFA a
+build_dfa :: Ord a => [a] -> [Move a] -> a -> [a] -> DFA a
 build_dfa q delta q0 f = DFA q delta q0 f
 
 delta_star' :: (Eq a, Show a) => String -> a -> DFA a -> Maybe a 
 delta_star' [] f _ = Just f 
 delta_star' (c : cs) q dfa = 
-    let next = [p | (DMove q' c' p) <- delta dfa, q == q', c == c']
+    let next = [p | (Move q' c' p) <- delta dfa, q == q', c == c']
     in case next of 
         [] -> Nothing 
         [p] -> delta_star' cs p dfa 
@@ -43,8 +43,8 @@ delta_star' (c : cs) q dfa =
 delta_star :: (Eq a, Show a) => String -> DFA a -> Maybe a 
 delta_star s dfa = delta_star' (reverse s) (start dfa) dfa
 
-accepts :: (Eq a, Show a) => DFA a -> String -> Bool 
-accepts dfa s = 
+acceptsD :: (Eq a, Show a) => DFA a -> String -> Bool 
+acceptsD dfa s = 
     let mq = delta_star s dfa 
     in case mq of 
         Just q -> q `elem` (final dfa)
@@ -54,11 +54,11 @@ accepts dfa s =
 my_q :: [Int]
 my_q = [0, 1, 2]
 
-my_delta :: [DMove Int]
-my_delta = [DMove x '0' x | x <- my_q] ++ [
-    DMove 0 '1' 1,
-    DMove 1 '1' 2,
-    DMove 2 '1' 0
+my_delta :: [Move Int]
+my_delta = [Move x '0' x | x <- my_q] ++ [
+    Move 0 '1' 1,
+    Move 1 '1' 2,
+    Move 2 '1' 0
     ]
 
 my_q0 :: Int
