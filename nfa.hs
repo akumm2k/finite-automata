@@ -16,22 +16,11 @@ instance Automaton NFA where
     states = statesN
     start = startN 
     final = finalN 
-    -- delta = deltaN
+    delta = deltaN
     accepts = acceptsN
 
 data NFA a = 
-    NFA {statesN :: [a], moves :: [(Move a)], startN :: a, finalN :: [a]}
-
--- data Move a =
---     Move a Char [a] |
---     EMove a [a]
---     deriving Eq 
-
--- instance (Show a) => Show (Move a) where 
---     show (Move q c p) = 
---         "(" ++ show q ++ " - '" ++ [c] ++ "' -> " ++ show p ++ ")"
---     show (EMove p q) = 
---         "(" ++ show q ++ " - " ++ "Eps" ++ " -> " ++ show p ++ ")"
+    NFA {statesN :: [a], movesN :: [(Move a)], startN :: a, finalN :: [a]}
 
 instance (Show a) =>  Show (NFA a) where 
     show (NFA q delta q0 f) = 
@@ -45,7 +34,7 @@ build_nfa q delta q0 f = NFA q delta q0 f
 
 deltaN :: Eq a => NFA a -> Char -> a -> [a]
 deltaN nfa c p = nub $
-    let qs = concat [q | (Move p' c' q) <- moves nfa, c' == c, p == p']
+    let qs = concat [q | (Move p' c' q) <- movesN nfa, c' == c, p == p']
     in concatMap (lambda_closure nfa) qs
 
 {-
@@ -111,10 +100,10 @@ my_f = [5]
 
 -- split an extended move into a non deterministive moves
 extMove_to_move :: [ExtMove a] -> [Move a]
-extMove_to_move moves = 
-    [Move p c q | (ExtMove p cs q) <- moves, cs /= "", c <- cs]
+extMove_to_move movesN = 
+    [Move p c q | (ExtMove p cs q) <- movesN, cs /= "", c <- cs]
     ++ 
-    [EMove p q | (ExtMove p "" q) <- moves]
+    [EMove p q | (ExtMove p "" q) <- movesN]
 
 my_nfa :: NFA Int
 my_nfa = NFA my_q (extMove_to_move my_delta) my_q0 my_f 

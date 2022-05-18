@@ -10,7 +10,7 @@ class Automaton at where
     start :: at a -> a 
     final :: at a -> [a]
     accepts :: (Eq a, Show a) => at a -> String -> Bool
-    -- delta :: (Eq a) => at a -> Char -> a -> [a]
+    delta :: (Eq a) => at a -> Char -> a -> [a]
 
 instance (Show a) => Show (Move a) where 
     show (Move q c p) = 

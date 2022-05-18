@@ -3,10 +3,10 @@ import Automaton
 {-
 * DFA: 
 (
-    Q                           - finite set of states
-    delta: Q x Sigma -> P[Q]    - finite set of transitions
-    q0                          - starting state
-    F                           - set of final states
+    finite set of states -      Q
+    finite set of transitions - delta: Q x Sigma -> P[Q]
+    starting state -            q0
+    set of final states -       F
 )
 -}
 
@@ -14,11 +14,11 @@ instance Automaton DFA where
     states = statesD 
     start = startD 
     final = finalD 
-    -- delta = deltaD 
+    delta = deltaD 
     accepts = acceptsD
 
 data DFA a = 
-    DFA {statesD :: [a], deltaD :: [(Move a)], startD :: a, finalD :: [a]}
+    DFA {statesD :: [a], movesD :: [(Move a)], startD :: a, finalD :: [a]}
 
 instance (Show a) =>  Show (DFA a) where 
     show (DFA q delta q0 f) = 
@@ -30,10 +30,14 @@ instance (Show a) =>  Show (DFA a) where
 build_dfa :: Ord a => [a] -> [Move a] -> a -> [a] -> DFA a
 build_dfa q delta q0 f = DFA q delta q0 f
 
+deltaD :: Eq a => DFA a -> Char -> a -> [a]
+deltaD dfa c p =
+    concat [q | (Move p' c' q) <- movesD dfa, c' == c, p == p']
+
 delta_star' :: (Eq a, Show a) => a -> DFA a -> String -> Maybe a 
 delta_star' f _ [] = Just f 
 delta_star' q dfa (c : cs) = 
-    let next = [p | (Move q' c' [p]) <- deltaD dfa, q == q', c == c']
+    let next = delta dfa c q
     in case next of 
         [] -> Nothing 
         [p] -> delta_star' p dfa cs
