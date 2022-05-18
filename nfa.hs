@@ -1,5 +1,7 @@
 import Data.List
 import Debug.Trace
+import Automaton
+
 {-
 * NFA: 
 (
@@ -10,19 +12,26 @@ import Debug.Trace
 )
 -}
 
+instance Automaton NFA where
+    states = statesN
+    start = startN 
+    final = finalN 
+    -- delta = deltaN
+    accepts = acceptsN
+
 data NFA a = 
-    NFA {statesN :: [a], moves :: [(NMove a)], startN :: a, finalN :: [a]}
+    NFA {statesN :: [a], moves :: [(Move a)], startN :: a, finalN :: [a]}
 
-data NMove a =
-    NMove a Char [a] |
-    Emove a [a]
-    deriving Eq 
+-- data Move a =
+--     Move a Char [a] |
+--     EMove a [a]
+--     deriving Eq 
 
-instance (Show a) => Show (NMove a) where 
-    show (NMove q c p) = 
-        "(" ++ show q ++ " - '" ++ [c] ++ "' -> " ++ show p ++ ")"
-    show (Emove p q) = 
-        "(" ++ show q ++ " - " ++ "Eps" ++ " -> " ++ show p ++ ")"
+-- instance (Show a) => Show (Move a) where 
+--     show (Move q c p) = 
+--         "(" ++ show q ++ " - '" ++ [c] ++ "' -> " ++ show p ++ ")"
+--     show (EMove p q) = 
+--         "(" ++ show q ++ " - " ++ "Eps" ++ " -> " ++ show p ++ ")"
 
 instance (Show a) =>  Show (NFA a) where 
     show (NFA q delta q0 f) = 
@@ -31,21 +40,21 @@ instance (Show a) =>  Show (NFA a) where
         "q0: " ++ show q0 ++ " \n" ++
         "F: " ++ show f 
 
-build_nfa :: Ord a => [a] -> [NMove a] -> a -> [a] -> NFA a
+build_nfa :: Ord a => [a] -> [Move a] -> a -> [a] -> NFA a
 build_nfa q delta q0 f = NFA q delta q0 f
 
-delta :: Eq a => NFA a -> Char -> a -> [a]
-delta nfa c p = nub $
-    let qs = concat [q | (NMove p' c' q) <- moves nfa, c' == c, p == p']
+deltaN :: Eq a => NFA a -> Char -> a -> [a]
+deltaN nfa c p = nub $
+    let qs = concat [q | (Move p' c' q) <- moves nfa, c' == c, p == p']
     in concatMap (lambda_closure nfa) qs
 
 {-
 q \in (lambda_closure q)
-for all r s.t. Emove q r, r \in (lambda_closure q)
+for all r s.t. EMove q r, r \in (lambda_closure q)
 -}
 lambda_closure :: Eq a => NFA a -> a -> [a]
 lambda_closure (NFA q delta q0 f) q' = 
-    q' : concat [r | (Emove p r) <- delta, p == q']
+    q' : concat [r | (EMove p r) <- delta, p == q']
 
 {-
 delta_star(q, wa) | a :: Char, w :: String
@@ -55,7 +64,7 @@ delta_star' :: (Eq a, Show a) => [a] -> NFA a -> String -> Maybe [a]
 delta_star' fs _ [] = Just fs
 delta_star' qs nfa (c : cs) = 
     let qs' = nub $ concatMap (lambda_closure nfa) qs
-        next = concatMap (delta nfa c) qs'
+        next = concatMap (deltaN nfa c) qs'
     in 
         case next of 
         [] -> Nothing 
@@ -64,8 +73,8 @@ delta_star' qs nfa (c : cs) =
 delta_star :: (Eq a, Show a) =>  NFA a -> String -> Maybe [a] 
 delta_star nfa = delta_star' [startN nfa] nfa
 
-accepts :: (Eq a, Show a) => NFA a -> String -> Bool 
-accepts nfa s = 
+acceptsN :: (Eq a, Show a) => NFA a -> String -> Bool 
+acceptsN nfa s = 
     let reached = delta_star nfa s 
     in case reached of 
         Just qs -> or [f `elem` qs | f <- finalN nfa]
@@ -101,11 +110,11 @@ my_f :: [Int]
 my_f = [5]
 
 -- split an extended move into a non deterministive moves
-extMove_to_move :: [ExtMove a] -> [NMove a]
+extMove_to_move :: [ExtMove a] -> [Move a]
 extMove_to_move moves = 
-    [NMove p c q | (ExtMove p cs q) <- moves, cs /= "", c <- cs]
+    [Move p c q | (ExtMove p cs q) <- moves, cs /= "", c <- cs]
     ++ 
-    [Emove p q | (ExtMove p "" q) <- moves]
+    [EMove p q | (ExtMove p "" q) <- moves]
 
 my_nfa :: NFA Int
 my_nfa = NFA my_q (extMove_to_move my_delta) my_q0 my_f 
