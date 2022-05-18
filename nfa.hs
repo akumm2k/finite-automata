@@ -35,7 +35,9 @@ build_nfa q delta q0 f = NFA q delta q0 f
 
 deltaN :: Eq a => NFA a -> Char -> a -> [a]
 deltaN nfa c p = nub $
-    let qs = concat [q | (Move p' c' q) <- movesN nfa, c' == c, p == p']
+    -- pattern match Move to avoid calling `char` on an epsilon move
+    let qs = concat [to m | m@(Move _ _ _) <- movesN nfa, 
+            char m == c, from m == p]
     in concatMap (lambda_closure nfa) qs
 
 {-
@@ -55,8 +57,7 @@ delta_star' fs _ [] = Just fs
 delta_star' qs nfa (c : cs) = 
     let qs' = nub $ concatMap (lambda_closure nfa) qs
         next = concatMap (deltaN nfa c) qs'
-    in 
-        case next of 
+    in case next of 
         [] -> Nothing 
         _ -> delta_star' next nfa cs
 

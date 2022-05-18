@@ -40,7 +40,7 @@ valid_moves moves =
 
 deltaD :: Eq a => DFA a -> Char -> a -> [a]
 deltaD dfa c p =
-    concat [q | (Move p' c' q) <- movesD dfa, c' == c, p == p']
+    concat [to m | m <- movesD dfa, char m == c, from m == p]
 
 {-
 delta_star(q, wa) | w :: String, a :: Char 
