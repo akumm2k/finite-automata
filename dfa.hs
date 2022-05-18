@@ -14,7 +14,7 @@ instance Automaton DFA where
     states = statesD 
     start = startD 
     final = finalD 
-    delta = deltaD 
+    -- delta = deltaD 
     accepts = acceptsD
 
 data DFA a = 
@@ -33,7 +33,7 @@ build_dfa q delta q0 f = DFA q delta q0 f
 delta_star' :: (Eq a, Show a) => a -> DFA a -> String -> Maybe a 
 delta_star' f _ [] = Just f 
 delta_star' q dfa (c : cs) = 
-    let next = [p | (Move q' c' p) <- delta dfa, q == q', c == c']
+    let next = [p | (Move q' c' [p]) <- deltaD dfa, q == q', c == c']
     in case next of 
         [] -> Nothing 
         [p] -> delta_star' p dfa cs
@@ -55,10 +55,10 @@ my_q :: [Int]
 my_q = [0, 1, 2]
 
 my_delta :: [Move Int]
-my_delta = [Move x '0' x | x <- my_q] ++ [
-    Move 0 '1' 1,
-    Move 1 '1' 2,
-    Move 2 '1' 0
+my_delta = [Move x '0' [x] | x <- my_q] ++ [
+    Move 0 '1' [1],
+    Move 1 '1' [2],
+    Move 2 '1' [0]
     ]
 
 my_q0 :: Int
