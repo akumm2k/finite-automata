@@ -82,6 +82,9 @@ transitioning to the same state
 
 my_q :: [Int]
 my_q = [0 .. 5]
+my_q0 :: Int
+my_q0 = 0 
+
 my_delta :: [ExtMove Int]
 my_delta = [
     ExtMove 0 "" [1],
@@ -92,8 +95,6 @@ my_delta = [
     ExtMove 3 "" [5],
     ExtMove 4 "." [3]
     ]
-my_q0 :: Int
-my_q0 = 0 
 
 my_f :: [Int]
 my_f = [5]

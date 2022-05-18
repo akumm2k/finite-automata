@@ -34,6 +34,10 @@ deltaD :: Eq a => DFA a -> Char -> a -> [a]
 deltaD dfa c p =
     concat [q | (Move p' c' q) <- movesD dfa, c' == c, p == p']
 
+{-
+delta_star(q, wa) | w :: String, a :: Char 
+    = delta( delta_star(q, w), a ) 
+-}
 delta_star' :: (Eq a, Show a) => a -> DFA a -> String -> Maybe a 
 delta_star' f _ [] = Just f 
 delta_star' q dfa (c : cs) = 
@@ -54,6 +58,7 @@ acceptsD dfa s =
         Just q -> q `elem` (final dfa)
         Nothing -> False
 
+-- test DFA:
 -- L(my_dfa) = {w | w \in {0, 1}*, |w|1 % 3 == 0}
 my_q :: [Int]
 my_q = [0, 1, 2]
