@@ -71,7 +71,7 @@ acceptsN nfa s =
 
 {-
 Test NFA:
-accepts `[+-]?[1-9]*\.[1-9]*`
+accepts `[+-]?(([1-9]+\.[1-9]*)|([1-9]*\.[1-9]+))`
 -}
 
 data ExtMove a = ExtMove a String [a]
