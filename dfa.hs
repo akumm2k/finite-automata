@@ -28,7 +28,14 @@ instance (Show a) =>  Show (DFA a) where
         "F: " ++ show f 
 
 build_dfa :: Ord a => [a] -> [Move a] -> a -> [a] -> DFA a
-build_dfa q delta q0 f = DFA q delta q0 f
+build_dfa q delta q0 f = 
+    if valid_moves delta then DFA q delta q0 f
+    else error ("Non-deterministic move detected.")
+
+valid_moves :: [Move a] -> Bool 
+valid_moves moves = 
+    and [null $ tail q | (Move _ _ q) <- moves] && 
+    null [1 | (EMove _ _) <- moves]
 
 deltaD :: Eq a => DFA a -> Char -> a -> [a]
 deltaD dfa c p =
