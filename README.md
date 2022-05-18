@@ -3,18 +3,21 @@
 ![GitHub](https://img.shields.io/github/license/Directoire/under-construction-template)
 
 - [x] Recursive descent parser for regular expressions
-- [ ] building nfas, and dfas
+- [x] building nfas, and dfas
 - [ ] converting from nfa -> dfa
 - [ ] converting from regex -> nfa
 - [ ] minimizing dfas
 
 ## Questions
 
+
+## Questions Archive
+
+### Automata 
+
 - How to better structure the nfa and dfa implementation, such that
   they implement the same methods for accessing states, delta, start and
   final states?
-
-## Questions Archive
 
 ### Regex Parser
 
