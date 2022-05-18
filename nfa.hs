@@ -1,3 +1,4 @@
+module NFA (build_nfa, NFA(..), ExtMove(..), my_nfa) where 
 import Data.List
 import Debug.Trace
 import Automaton
