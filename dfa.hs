@@ -1,4 +1,5 @@
 module DFA (build_dfa, DFA(..)) where 
+    
 import Debug.Trace
 import Automaton
 {-
