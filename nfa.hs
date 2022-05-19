@@ -34,28 +34,35 @@ build_nfa :: Ord a => [a] -> [Move a] -> [a] -> [a] -> NFA a
 build_nfa q delta q0 f = NFA q delta q0 f
 
 deltaN :: Eq a => NFA a -> Char -> a -> [a]
-deltaN nfa c p = nub $
+deltaN nfa c p =
     -- pattern match Move to avoid calling `char` on an epsilon move
     let qs = concat [to m | m@(Move _ _ _) <- movesN nfa, 
             char m == c, from m == p]
-    in concatMap (lambda_closure nfa) qs
+    in concatMap (epsilon_closure nfa) qs
 
 {-
-q \in (lambda_closure q)
-for all r s.t. EMove q r, r \in (lambda_closure q)
+q \in (epsilon_closure q)
+if p \in (epsilon_closure q) and EMove p r 
+    then r \in (epsilon_closure q)
 -}
-lambda_closure :: Eq a => NFA a -> a -> [a]
-lambda_closure (NFA q delta q0 f) q' = 
-    q' : concat [r | (EMove p r) <- delta, p == q']
+epsilon_closure' :: Eq a => NFA a -> [a] -> [a]
+epsilon_closure' n@(NFA q delta q0 f) qs = 
+    let new_qs = [r | p <- qs, (EMove p' enp) <- delta, 
+            p == p', r <- enp]
+    in if null (new_qs \\ qs) then qs 
+    else epsilon_closure' n (nub $ qs ++ new_qs)
 
+epsilon_closure :: Eq a => NFA a -> a -> [a]
+epsilon_closure n q' = 
+    epsilon_closure' n [q']
 {-
 delta_star(q, wa) | a :: Char, w :: String
-    = lambda_closure (delta(p, a) for all p in delta_star(q, w))
+    = epsilon_closure (delta(p, a) for all p in delta_star(q, w))
 -}
 delta_star' :: (Eq a, Show a) => [a] -> NFA a -> String -> Maybe [a] 
 delta_star' fs _ [] = Just fs
 delta_star' qs nfa (c : cs) = 
-    let qs' = nub $ concatMap (lambda_closure nfa) qs
+    let qs' = nub $ concatMap (epsilon_closure nfa) qs
         next = concatMap (deltaN nfa c) qs'
     in case next of 
         [] -> Nothing 
@@ -70,6 +77,26 @@ acceptsN nfa s =
     in case reached of 
         Just qs -> or [f `elem` qs | f <- finalN nfa]
         Nothing -> False
+
+{-
+let `p \ q` represent an epsilon transition from p to q
+p \ q and p is a starting state, then q is a starting state
+p \ q and q is a final state, then p is a final state
+
+for each `p \ q` elimination, create new move `p c r` such that
+there is a move `q c r`
+-}
+elim_epsilon :: Eq a => NFA a -> NFA a 
+elim_epsilon n@(NFA q moves q0 f) = 
+    let nq0 = concatMap (epsilon_closure n) q0
+        nf = [p | q <- f, (EMove p qs) <- moves, q `elem` qs]
+        f' = f ++ nf 
+        deterministic_moves = [Move p c q' | (Move p c q) <- moves, 
+            let q' = concatMap (epsilon_closure n) q]
+        new_moves = [Move p c r | (EMove p qs) <- moves, 
+            q <- qs, (Move q' c r) <- moves, q == q'
+            ]
+    in NFA q (deterministic_moves ++ new_moves) nq0 f'
 
 {-
 Test NFA:
@@ -110,3 +137,6 @@ extMove_to_move movesN =
 
 my_nfa :: NFA Int
 my_nfa = NFA my_q (extMove_to_move my_delta) my_q0 my_f 
+
+n :: NFA Int
+n = NFA [0 .. 3] [(EMove 0 [1]), (Move 1 '1' [2]), (EMove 2 [3])] [0] [3]
