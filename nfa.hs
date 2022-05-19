@@ -1,5 +1,4 @@
-module NFA (build_nfa, NFA(..), ExtMove(..), 
-    elim_epsilon, extMove_to_move) where 
+module NFA where 
         
 import Data.List
 import Debug.Trace
@@ -65,7 +64,7 @@ delta_star(q, wa) | a :: Char, w :: String
     = epsilon_closure (delta(p, a) for all p in delta_star(q, w))
 -}
 delta_star' :: (Eq a, Show a) => [a] -> NFA a -> String -> Maybe [a] 
-delta_star' fs _ [] = Just fs
+delta_star' fs n [] = Just (concat ((epsilon_closure n) <$> fs))
 delta_star' qs nfa (c : cs) = 
     let qs' = nub $ concatMap (epsilon_closure nfa) qs
         next = concatMap (deltaN nfa c) qs'
@@ -107,7 +106,10 @@ isomorphismN :: (Show a, Eq a, Show b, Eq b) => NFA a -> [b] -> NFA b
 isomorphismN n@(NFA q moves s0 f) qs' =
     let qs = states n 
         h = zip qs qs' 
-        h_each = (\x -> let Just x' = lookup x h in x')
+        h_each = (\x -> case lookup x h of 
+            Just x' -> x' 
+            Nothing -> error ""
+            )
         moves' = [(Move hp c hq) | (Move p c q) <- moves, 
             let Just hp = lookup p h, let hq = h_each <$> q]
             ++ 
