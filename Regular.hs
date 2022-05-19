@@ -3,19 +3,22 @@ import DFA
 import NFA 
 import Queue
 import Data.List
-import Debug.Trace
 
 {-
-TODO: implement to_dfa
-to_dfa :: NFA a -> DFA [a] 
-to_dfa (NFA q delta q0 f) = 
-    DFA q' delta' q0' f' 
-    where 
-* Steps:
+* NFA to DFA:
     Remove lambda transitions
     subset_constr
     Boom! DFA
 -}
+to_dfa :: (Eq a, Show a) => NFA a -> DFA [a]
+to_dfa n = 
+    DFA (subsets q) delta' [s0] f'
+    where 
+        n'@(NFA q delta s0 f) = elim_epsilon n
+        delta' = subset_constr n'
+        f' = nub $
+            concat [p | (Move _ _ p) <- delta', intersect (head p) f /= []]
+            ++ [q | (Move q _ _) <- delta', intersect q f /= []]
 
 {-
 * Subset Construction for nfa n
@@ -50,6 +53,7 @@ subset_constr n@(NFA q moves q0 f) =
     in subset_constr' queue n (alphabet_of n) [] []
 
 subsets :: [a] -> [[a]]
+-- an FSM has a finite powerset
 subsets [] = [[]]
 subsets (x : xs) = 
     [x : r | r <- rest] ++ rest 
