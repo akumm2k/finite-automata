@@ -1,3 +1,5 @@
+module Regular where 
+    
 import Automaton
 import DFA 
 import NFA 
