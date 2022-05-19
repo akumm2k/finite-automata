@@ -8,7 +8,7 @@ import Automaton
 * NFA: 
 (
     finite set of states        q
-    finite set of transitions   delta
+    finite set of transitions   delta: Q x Sigma -> P(Q)
     starting states             s0
     set of final states         f
 )

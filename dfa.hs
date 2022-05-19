@@ -5,7 +5,7 @@ import Automaton
 * DFA: 
 (
     finite set of states -      Q
-    finite set of transitions - delta: Q x Sigma -> P[Q]
+    finite set of transitions - delta: Q x Sigma -> Q
     starting state -            q0
     set of final states -       F
 )
@@ -31,11 +31,11 @@ instance (Show a) =>  Show (DFA a) where
 
 build_dfa :: Ord a => [a] -> [Move a] -> [a] -> [a] -> DFA a
 build_dfa q delta q0 f = 
-    if deterministic (delta, q0)  then DFA q delta q0 f
+    if is_deterministic (delta, q0)  then DFA q delta q0 f
     else error ("Non-deterministic move detected.")
 
-deterministic :: ([Move a], [a]) -> Bool 
-deterministic (ms, q0) = 
+is_deterministic :: ([Move a], [a]) -> Bool 
+is_deterministic (ms, q0) = 
     and [null $ tail q | (Move _ _ q) <- ms] 
     && null [1 | (EMove _ _) <- ms] 
     && null (tail q0)
