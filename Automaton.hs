@@ -16,6 +16,7 @@ class Automaton at where
     isomorphism :: (Show a, Eq a, Show b, Eq b) => at a -> [b] -> at b
 
 show_states :: Show a => [a] -> String
+-- show_states [1, 2, 3] = "1, 2, 3"
 show_states qs = intercalate ", " (show <$> qs)
 
 instance (Show a) => Show (Move a) where 
@@ -28,6 +29,7 @@ rmdups :: Ord a => [a] -> [a]
 rmdups = map head . group . sort
 
 alphabet_of :: Automaton at => at a -> [Char]
+-- return all the alphabet used in the automaton
 alphabet_of at = rmdups [c | (Move _ c _) <- moves at]
 
 differentiate_states :: (Automaton at, Show a, Eq a, Show b, Eq b) 

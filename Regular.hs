@@ -9,37 +9,34 @@ import Data.List
 
 {-
 Reg to nfa
-    r - q delta s0 f
-    Epsilon -    [0] [] [0] [0]
-    Literal c -  [0, 1] [0 - c -> 1] [1]
-    Or r1 r2     new start -\-> [start n1, start n2]
-    Then r1 r2 - final n1 -\-> start n2
-    Opt r1 -     new start -\-> start n1 | new start \in final
-    Star r1 -    new start <-\-> final n1, and new start -\-> start n1
-        where 
-            n1 = to_nfa r1
-            n2 = to_nfa r2
+    r -> NFA q delta s0 f
 -}
 reg_to_nfa :: String -> NFA Int 
 reg_to_nfa = reg_to_nfa' . get_reg 
 
 reg_to_nfa' :: Reg -> NFA Int
 reg_to_nfa' Epsilon = NFA [0] [] [0] [0]
+    -- Epsilon = NFA [0] [] [0] [0]
+
 reg_to_nfa' (Literal c) = NFA [0, 1] [Move 0 c [1]] [0] [1]
+    -- Literal c = NFA [0, 1] [0 - c -> 1] [1]
 
 reg_to_nfa' (Or r1 r2) = 
+    --  Or r1 r2: new start -\-> [start n1, start n2]
     let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
         emove = EMove 0 (start n1' ++ start n2')
     in (NFA [0 .. l1 + l2] (emove : (moves n1' ++ moves n2')) 
         [0] (final n1' ++ final n2'))
 
 reg_to_nfa' (Then r1 r2) = 
+    -- Then r1 r2: final n1 -\-> start n2
     let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
         emoves = [EMove en1 (start n2') | en1 <- final n1']
     in (NFA [1 .. l1 + l2] (emoves ++ moves n1' ++ moves n2')
         (start n1') (final n2'))
 
 reg_to_nfa' (Opt r) = 
+    -- Opt r1: new start -\-> start n1 | new start \in final
     let n = reg_to_nfa' r 
         l = length $ states n
         n' = isomorphism n [1 .. l]
@@ -47,6 +44,7 @@ reg_to_nfa' (Opt r) =
     in NFA [0 .. l] (emove : moves n') [0] (0 : final n')
 
 reg_to_nfa' (Star r) = 
+    -- Star r1: new start <-\-> final n1, and new start -\-> start n1
     let n = reg_to_nfa' r 
         l = length $ states n
         n' = isomorphism n [1 .. l]
@@ -55,6 +53,7 @@ reg_to_nfa' (Star r) =
     in NFA [0 .. l] (emoves ++ moves n') [0] (final n')
 
 regs_to_distinct_nfa :: Reg -> Reg -> (Int, Int, NFA Int, NFA Int)
+-- given two regs, get their corresponding distinct NFAs w/ their lengths
 regs_to_distinct_nfa r1 r2 = 
     let n1 = reg_to_nfa' r1 
         n2 = reg_to_nfa' r2
@@ -74,6 +73,10 @@ to_nfa (DFA q delta q0 f) = NFA q delta q0 f
     Remove lambda transitions
     subset_constr
     Boom! DFA
+
+for an NFA (Q, delta, S0, F)
+the following is the equivalent DFA
+(P(Q), delta', {S0}, {q | q intersetion f is not null for q in P(Q)})
 -}
 to_dfa :: (Eq a, Show a) => NFA a -> DFA [a]
 to_dfa n = 
@@ -82,7 +85,7 @@ to_dfa n =
         n'@(NFA q delta s0 f) = elim_epsilon n
         delta' = subset_constr n'
         f' = nub $
-            concat [p | (Move _ _ p) <- delta', intersect (head p) f /= []]
+            concat [[p] | (Move _ _ [p]) <- delta', intersect p f /= []]
             ++ [q | (Move q _ _) <- delta', intersect q f /= []]
 
 {-
@@ -104,8 +107,8 @@ subset_constr' queue _ _ states moves | isEmpty queue = moves
 subset_constr' queue nfa alphabet visited moves = 
     let Just (states, queue') = dequeue queue
         moves' = [Move states c [ps] | c <- alphabet, 
-                let ps = nub $ concat [p | q <- states, let p = delta nfa c q,
-                        p /= []], ps /= []
+                let ps = nub $ concat [p | q <- states, 
+                        let p = delta nfa c q, p /= []], ps /= []
             ]
         new_states = concat [ps | Move _ _ ps <- moves']
         visited' = states : visited 

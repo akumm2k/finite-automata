@@ -38,6 +38,7 @@ build_nfa :: Ord a => [a] -> [Move a] -> [a] -> [a] -> NFA a
 build_nfa q delta s0 f = NFA q delta s0 f
 
 deltaN :: Eq a => NFA a -> Char -> a -> [a]
+-- return the transition from p w/ c in nfa
 deltaN nfa c p =
     -- pattern match Move to avoid calling `char` on an epsilon move
     let qs = concat [to m | m@(Move _ _ _) <- movesN nfa, 
@@ -59,6 +60,7 @@ epsilon_closure' n@(NFA q delta s0 f) qs =
 epsilon_closure :: Eq a => NFA a -> a -> [a]
 epsilon_closure n q' = 
     epsilon_closure' n [q']
+
 {-
 delta_star(q, wa) | a :: Char, w :: String
     = epsilon_closure (delta(p, a) for all p in delta_star(q, w))
@@ -103,6 +105,7 @@ elim_epsilon n@(NFA q ms q0 f) =
     in NFA q (deterministic_moves ++ new_moves) nq0 f'
 
 isomorphismN :: (Show a, Eq a, Show b, Eq b) => NFA a -> [b] -> NFA b 
+-- return an isomorphic NFA with states(NFA) renamed to qs'
 isomorphismN n@(NFA q moves s0 f) qs' =
     let qs = states n 
         h = zip qs qs' 

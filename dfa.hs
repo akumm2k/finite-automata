@@ -39,12 +39,14 @@ build_dfa q delta q0 f =
     else error ("Non-deterministic move detected.")
 
 is_deterministic :: ([Move a], [a]) -> Bool 
+-- return true if the moves have only one sink state
 is_deterministic (ms, q0) = 
     and [null $ tail q | (Move _ _ q) <- ms] 
     && null [1 | (EMove _ _) <- ms] 
     && null (tail q0)
 
 deltaD :: Eq a => DFA a -> Char -> a -> [a]
+-- return the transition from p w/ c in dfa
 deltaD dfa c p =
     concat [to m | m <- movesD dfa, char m == c, from m == p]
 
@@ -74,6 +76,7 @@ acceptsD dfa s =
         Nothing -> False
 
 isomorphismD :: (Show a, Eq a, Show b, Eq b) => DFA a -> [b] -> DFA b
+-- return an isomorphic dfa w/ states(DFA) renamed to qs'
 isomorphismD d@(DFA q moves [q0] f) qs' = 
     let qs = states d
         h = zip qs qs'
