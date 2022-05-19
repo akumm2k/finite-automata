@@ -42,4 +42,15 @@ to_dfa :: NFA a -> DFA [a]
 to_dfa (NFA q delta q0 f) = 
     DFA q' delta' q0' f' 
     where 
+* Steps:
+    Remove lambda transitions
+    Build the transitions
+    - for each state starting from the starting state
+        use a queue = [starting state]
+        while q
+            dequeue q
+            find all transitions on each character 
+                skip all empty state transitions
+            enqueue new states created
+    Boom! DFA
 -}
