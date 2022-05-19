@@ -26,6 +26,3 @@ my_f = [1]
 
 my_nfa :: NFA Int
 my_nfa = NFA my_q (extMove_to_move my_delta) my_q0 my_f 
-
-to_nfa :: DFA a -> NFA a 
-to_nfa (DFA q delta q0 f) = NFA q delta q0 f 

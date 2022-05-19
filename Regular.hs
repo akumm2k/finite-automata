@@ -1,10 +1,18 @@
 module Regular where 
-    
+
 import Automaton
 import DFA 
 import NFA 
 import Queue
 import Data.List
+
+{-
+all states in the DFA are converted to sigleton sets
+in the NFA. DFAs are internally implemented with singleton sets
+so we can convert them to NFAs directly.
+-}
+to_nfa :: DFA a -> NFA a 
+to_nfa (DFA q delta q0 f) = NFA q delta q0 f 
 
 {-
 * NFA to DFA:
