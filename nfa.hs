@@ -1,4 +1,4 @@
-module NFA (build_nfa, NFA(..), ExtMove(..)) where 
+module NFA (build_nfa, NFA(..), ExtMove(..), elim_epsilon) where 
 import Data.List
 import Debug.Trace
 import Automaton
@@ -17,6 +17,7 @@ instance Automaton NFA where
     states = statesN
     start = startN 
     final = finalN 
+    moves = movesN
     delta = deltaN
     accepts = acceptsN
 
@@ -87,14 +88,14 @@ for each `p \ q` elimination, create new move `p c r` such that
 there is a move `q c r`
 -}
 elim_epsilon :: Eq a => NFA a -> NFA a 
-elim_epsilon n@(NFA q moves q0 f) = 
+elim_epsilon n@(NFA q ms q0 f) = 
     let nq0 = concatMap (epsilon_closure n) q0
-        nf = [p | q <- f, (EMove p qs) <- moves, q `elem` qs]
+        nf = [p | q <- f, (EMove p qs) <- ms, q `elem` qs]
         f' = f ++ nf 
-        deterministic_moves = [Move p c q' | (Move p c q) <- moves, 
+        deterministic_moves = [Move p c q' | (Move p c q) <- ms, 
             let q' = concatMap (epsilon_closure n) q]
-        new_moves = [Move p c r | (EMove p qs) <- moves, 
-            q <- qs, (Move q' c r) <- moves, q == q'
+        new_moves = [Move p c r | (EMove p qs) <- ms, 
+            q <- qs, (Move q' c r) <- ms, q == q'
             ]
     in NFA q (deterministic_moves ++ new_moves) nq0 f'
 

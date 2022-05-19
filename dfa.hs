@@ -16,6 +16,7 @@ instance Automaton DFA where
     start = startD 
     final = finalD 
     delta = deltaD 
+    moves = movesD
     accepts = acceptsD
 
 data DFA a = 
@@ -34,9 +35,9 @@ build_dfa q delta q0 f =
     else error ("Non-deterministic move detected.")
 
 deterministic :: ([Move a], [a]) -> Bool 
-deterministic (moves, q0) = 
-    and [null $ tail q | (Move _ _ q) <- moves] 
-    && null [1 | (EMove _ _) <- moves] 
+deterministic (ms, q0) = 
+    and [null $ tail q | (Move _ _ q) <- ms] 
+    && null [1 | (EMove _ _) <- ms] 
     && null (tail q0)
 
 deltaD :: Eq a => DFA a -> Char -> a -> [a]
