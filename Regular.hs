@@ -6,24 +6,30 @@ import Data.List
 import Debug.Trace
 
 {-
-TODO: implement subset construction
+TODO: implement to_dfa
 to_dfa :: NFA a -> DFA [a] 
 to_dfa (NFA q delta q0 f) = 
     DFA q' delta' q0' f' 
     where 
 * Steps:
     Remove lambda transitions
-    Build the transitions
-    - for each state starting from the [starting states]
-        use a queue = [starting state]
-        while q
-            dequeue q
-            find all transitions on each character 
-                skip all empty state transitions
-            enqueue new states created
+    subset_constr
     Boom! DFA
 -}
 
+{-
+* Subset Construction for nfa n
+Build new transitions
+    - for each state in queue starting with those in the Power Set of s0
+        while queue
+            s <- dequeue queue
+            find all transitions on each character from each state in s
+                skip all empty state transitions
+            enqueue new states created
+
+subset_constr' :: queue nfa alphabet states visited_states 
+    constructed_moves_so_far
+-}
 subset_constr' :: (Show a, Eq a) => FQueue [a] -> NFA a -> String 
     -> [[a]] -> [Move [a]] -> [Move [a]]
 subset_constr' queue _ _ states moves | isEmpty queue = moves 
@@ -34,9 +40,7 @@ subset_constr' queue nfa alphabet visited moves =
                         p /= []], ps /= []
             ]
         new_states = concat [ps | Move _ _ ps <- moves']
-        visited' = trace ("queue: " ++ show queue ++ "\nvisited" ++
-            show visited ++ "\nnew_states: " ++ show new_states ++ "\n") $ 
-            states : visited 
+        visited' = states : visited 
         new_queue = foldr enqueue queue' (new_states \\ visited')
     in subset_constr' new_queue nfa alphabet visited' (moves ++ moves')
 
