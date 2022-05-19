@@ -27,8 +27,9 @@ instance (Show a) =>  Show (DFA a) where
     show (DFA q delta q0 f) = 
         "Q: " ++ show q ++ " \n" ++
         "delta: " ++ show delta ++ " \n" ++ 
-        "q0: " ++ show q0 ++ " \n" ++
+        "q0: " ++ show q0' ++ " \n" ++
         "F: " ++ show f 
+        where [q0'] = q0 
 
 build_dfa :: Ord a => [a] -> [Move a] -> [a] -> [a] -> DFA a
 build_dfa q delta q0 f = 

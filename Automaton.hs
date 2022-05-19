@@ -14,11 +14,14 @@ class Automaton at where
     accepts :: (Eq a, Show a) => at a -> String -> Bool
     delta :: (Eq a) => at a -> Char -> a -> [a]
 
+show_states :: Show a => [a] -> String
+show_states qs = intercalate ", " (show <$> qs)
+
 instance (Show a) => Show (Move a) where 
-    show (Move q c p) = 
-        "(" ++ show q ++ " - " ++ [c] ++ " -> " ++ show p ++ ")"
+    show (Move q c ps) = 
+        "(" ++ show q ++ " - " ++ [c] ++ " -> " ++ show_states ps ++ ")"
     show (EMove q ps) = 
-        "(" ++ show q ++ " - " ++ "\\" ++ " -> " ++ show ps ++ ")"
+        "(" ++ show q ++ " - " ++ "\\" ++ " -> " ++ show_states ps ++ ")"
 
 rmdups :: Ord a => [a] -> [a]
 rmdups = map head . group . sort
