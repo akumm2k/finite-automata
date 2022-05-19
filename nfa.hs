@@ -100,35 +100,15 @@ elim_epsilon n@(NFA q ms q0 f) =
             ]
     in NFA q (deterministic_moves ++ new_moves) nq0 f'
 
-{-
-Test NFA:
-accepts `[+-]?(([1-9]+\.[1-9]*)|([1-9]*\.[1-9]+))`
--}
 
-data ExtMove a = ExtMove a String [a]
 {- 
 ExtendedMove NOT by words, but by multiple symbols 
 transitioning to the same state
+
+ExtMove 0 "+-" [1, 2] =
+    [Move 0 '+' [1, 2], Move '-' [1, 2]]
 -}
-
-my_q :: [Int]
-my_q = [0 .. 5]
-my_q0 :: [Int]
-my_q0 = [0] 
-
-my_delta :: [ExtMove Int]
-my_delta = [
-    ExtMove 0 "" [1],
-    ExtMove 0 "+-" [1],
-    ExtMove 1 "." [2],
-    ExtMove 1 "0123456789" [1, 4],
-    ExtMove 2 "0123456789" [3],
-    ExtMove 3 "" [5],
-    ExtMove 4 "." [3]
-    ]
-
-my_f :: [Int]
-my_f = [5]
+data ExtMove a = ExtMove a String [a]
 
 -- split an extended move into a non deterministive moves
 extMove_to_move :: [ExtMove a] -> [Move a]
@@ -136,9 +116,3 @@ extMove_to_move movesN =
     [Move p c q | (ExtMove p cs q) <- movesN, cs /= "", c <- cs]
     ++ 
     [EMove p q | (ExtMove p "" q) <- movesN]
-
-my_nfa :: NFA Int
-my_nfa = NFA my_q (extMove_to_move my_delta) my_q0 my_f 
-
-n :: NFA Int
-n = NFA [0 .. 3] [(EMove 0 [1]), (Move 1 '1' [2]), (EMove 2 [3])] [0] [3]
