@@ -15,53 +15,6 @@ instance Show Reg where
     show (Star a)       = "(" ++ show a ++ ")" ++ "*"
 
 {-
-left_derivative [re :: Reg] s =
-    L(re) \ {s} =
-    [v | uv = s and u in L(re)]
-        v = "" <-> uv = u = s in L(re) <-> s `matches` re
--}
-left_derivative :: Reg -> String -> [String]
-left_derivative Epsilon s = [s]
-
-left_derivative (Literal c) (d : s) | (c == d) = [s]
-left_derivative (Literal c) s = []
-
-left_derivative (Or a b) s = left_derivative a s ++ left_derivative b s 
-left_derivative (Then a b) s = 
-    [u | t <- left_derivative a s, u <- left_derivative b t] 
-
-left_derivative (Opt a) s = left_derivative a s ++ [s]
-left_derivative (Star a) s = 
-    let m = remove_item s (left_derivative a s) 
-        -- rm s to prevent inf recursion
-    in concat (map (left_derivative (Star a)) m) ++ [s]
-
--- remove all occurences of an item in a list
-remove_item :: Eq a => a -> [a] -> [a]
-remove_item _ [] = []
-remove_item x (y : ys) 
-    | x == y    = remove_item x ys
-    | otherwise = y : remove_item x ys
-
-{-
-get_left_derivative [re :: String] str
-    `left_derivative` but takes a regex `re` as string
-    and applies `left_derivative` to the parsed regex
--}
-get_left_derivative :: String -> String -> [String]
-get_left_derivative re = left_derivative (get_reg re)
-
-{-
-str `matches` re
-    if `str` matches the regex string `re`
-    * Recall: "" in left_derivative re str -> str was matched
--}
-matches :: String -> String -> Bool 
-matches s re_str = 
-    let re = get_reg re_str
-    in "" `elem` (left_derivative re s)
-
-{-
 * CFG for regular expressions:
 char -      'a' | ... | 'z'
 primary -   epsilon | char | '(' '.' regexp '.' ')'
@@ -178,6 +131,53 @@ get_reg s =
     let (re, str) = regexp s in
     if str == "" then re 
     else error ("something went wrong. Unconsumed substring: " ++ str)
+
+{-
+left_derivative [re :: Reg] s =
+    L(re) \ {s} =
+    [v | uv = s and u in L(re)]
+        v = "" <-> uv = u = s in L(re) <-> s `matches` re
+-}
+left_derivative :: Reg -> String -> [String]
+left_derivative Epsilon s = [s]
+
+left_derivative (Literal c) (d : s) | (c == d) = [s]
+left_derivative (Literal c) s = []
+
+left_derivative (Or a b) s = left_derivative a s ++ left_derivative b s 
+left_derivative (Then a b) s = 
+    [u | t <- left_derivative a s, u <- left_derivative b t] 
+
+left_derivative (Opt a) s = left_derivative a s ++ [s]
+left_derivative (Star a) s = 
+    let m = remove_item s (left_derivative a s) 
+        -- rm s to prevent inf recursion
+    in concat (map (left_derivative (Star a)) m) ++ [s]
+
+-- remove all occurences of an item in a list
+remove_item :: Eq a => a -> [a] -> [a]
+remove_item _ [] = []
+remove_item x (y : ys) 
+    | x == y    = remove_item x ys
+    | otherwise = y : remove_item x ys
+
+{-
+get_left_derivative [re :: String] str
+    `left_derivative` but takes a regex `re` as string
+    and applies `left_derivative` to the parsed regex
+-}
+get_left_derivative :: String -> String -> [String]
+get_left_derivative re = left_derivative (get_reg re)
+
+{-
+str `matches` re
+    if `str` matches the regex string `re`
+    * Recall: "" in left_derivative re str -> str was matched
+-}
+matches :: String -> String -> Bool 
+matches s re_str = 
+    let re = get_reg re_str
+    in "" `elem` (left_derivative re s)
 
 -- test_reg_parse: test if the precedence is enforeced correctly 
 test_reg_parse :: [String]
