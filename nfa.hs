@@ -21,7 +21,7 @@ instance Automaton NFA where
     accepts = acceptsN
 
 data NFA a = 
-    NFA {statesN :: [a], movesN :: [(Move a)], startN :: a, finalN :: [a]}
+    NFA {statesN :: [a], movesN :: [(Move a)], startN :: [a], finalN :: [a]}
 
 instance (Show a) =>  Show (NFA a) where 
     show (NFA q delta q0 f) = 
@@ -30,7 +30,7 @@ instance (Show a) =>  Show (NFA a) where
         "q0: " ++ show q0 ++ " \n" ++
         "F: " ++ show f 
 
-build_nfa :: Ord a => [a] -> [Move a] -> a -> [a] -> NFA a
+build_nfa :: Ord a => [a] -> [Move a] -> [a] -> [a] -> NFA a
 build_nfa q delta q0 f = NFA q delta q0 f
 
 deltaN :: Eq a => NFA a -> Char -> a -> [a]
@@ -62,7 +62,7 @@ delta_star' qs nfa (c : cs) =
         _ -> delta_star' next nfa cs
 
 delta_star :: (Eq a, Show a) =>  NFA a -> String -> Maybe [a] 
-delta_star nfa = delta_star' [startN nfa] nfa
+delta_star nfa = delta_star' (startN nfa) nfa
 
 acceptsN :: (Eq a, Show a) => NFA a -> String -> Bool 
 acceptsN nfa s = 
@@ -84,8 +84,8 @@ transitioning to the same state
 
 my_q :: [Int]
 my_q = [0 .. 5]
-my_q0 :: Int
-my_q0 = 0 
+my_q0 :: [Int]
+my_q0 = [0] 
 
 my_delta :: [ExtMove Int]
 my_delta = [

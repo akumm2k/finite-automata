@@ -8,8 +8,8 @@ test nfa
 -}
 my_q :: [Int]
 my_q = [0 .. 4]
-my_q0 :: Int
-my_q0 = 0 
+my_q0 :: [Int]
+my_q0 = [0] 
 
 my_delta :: [ExtMove Int]
 my_delta = [

@@ -19,7 +19,7 @@ instance Automaton DFA where
     accepts = acceptsD
 
 data DFA a = 
-    DFA {statesD :: [a], movesD :: [(Move a)], startD :: a, finalD :: [a]}
+    DFA {statesD :: [a], movesD :: [(Move a)], startD :: [a], finalD :: [a]}
 
 instance (Show a) =>  Show (DFA a) where 
     show (DFA q delta q0 f) = 
@@ -28,15 +28,16 @@ instance (Show a) =>  Show (DFA a) where
         "q0: " ++ show q0 ++ " \n" ++
         "F: " ++ show f 
 
-build_dfa :: Ord a => [a] -> [Move a] -> a -> [a] -> DFA a
+build_dfa :: Ord a => [a] -> [Move a] -> [a] -> [a] -> DFA a
 build_dfa q delta q0 f = 
-    if valid_moves delta then DFA q delta q0 f
+    if deterministic (delta, q0)  then DFA q delta q0 f
     else error ("Non-deterministic move detected.")
 
-valid_moves :: [Move a] -> Bool 
-valid_moves moves = 
-    and [null $ tail q | (Move _ _ q) <- moves] && 
-    null [1 | (EMove _ _) <- moves]
+deterministic :: ([Move a], [a]) -> Bool 
+deterministic (moves, q0) = 
+    and [null $ tail q | (Move _ _ q) <- moves] 
+    && null [1 | (EMove _ _) <- moves] 
+    && null (tail q0)
 
 deltaD :: Eq a => DFA a -> Char -> a -> [a]
 deltaD dfa c p =
@@ -57,7 +58,8 @@ delta_star' q dfa (c : cs) =
             ++ " - " ++ [c] ++ " -> " ++ show next)
 
 delta_star :: (Eq a, Show a) => DFA a -> String -> Maybe a 
-delta_star dfa = delta_star' (start dfa) dfa
+delta_star dfa = delta_star' s dfa
+    where [s] = start dfa
 
 acceptsD :: (Eq a, Show a) => DFA a -> String -> Bool 
 acceptsD dfa s = 
@@ -78,8 +80,8 @@ my_delta = [Move x '0' [x] | x <- my_q] ++ [
     Move 2 '1' [0]
     ]
 
-my_q0 :: Int
-my_q0 = 0 
+my_q0 :: [Int]
+my_q0 = [0] 
 
 my_f :: [Int]
 my_f = [0]
