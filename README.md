@@ -5,7 +5,7 @@
 - [x] Recursive descent parser for regular expressions
 - [x] building nfas, and dfas
 - [x] converting from nfa -> dfa
-- [ ] converting from regex -> nfa
+- [x] converting from regex -> nfa
 - [ ] minimizing dfas
 
 ## Questions

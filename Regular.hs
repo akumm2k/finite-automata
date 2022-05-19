@@ -3,8 +3,63 @@ module Regular where
 import Automaton
 import DFA 
 import NFA 
+import Regex
 import Queue
 import Data.List
+
+{-
+Reg to nfa
+    r - q delta s0 f
+    Epsilon -    [0] [] [0] [0]
+    Literal c -  [0, 1] [0 - c -> 1] [1]
+    Or r1 r2     new start -\-> [start n1, start n2]
+    Then r1 r2 - final n1 -\-> start n2
+    Opt r1 -     new start -\-> start n1 | new start \in final
+    Star r1 -    new start <-\-> final n1, and new start -\-> start n1
+        where 
+            n1 = to_nfa r1
+            n2 = to_nfa r2
+-}
+reg_to_nfa :: String -> NFA Int 
+reg_to_nfa = reg_to_nfa' . get_reg 
+
+reg_to_nfa' :: Reg -> NFA Int
+reg_to_nfa' Epsilon = NFA [0] [] [0] [0]
+reg_to_nfa' (Literal c) = NFA [0, 1] [Move 0 c [1]] [0] [1]
+
+reg_to_nfa' (Or r1 r2) = 
+    let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
+        emove = EMove 0 (start n1' ++ start n2')
+    in (NFA [0 .. l1 + l2] (emove : (moves n1' ++ moves n2')) 
+        [0] (final n1' ++ final n2'))
+
+reg_to_nfa' (Then r1 r2) = 
+    let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
+        emoves = [EMove en1 (start n2') | en1 <- final n1']
+    in (NFA [1 .. l1 + l2] (emoves ++ moves n1' ++ moves n2')
+        (start n1') (final n2'))
+
+reg_to_nfa' (Opt r) = 
+    let n = reg_to_nfa' r 
+        l = length $ states n
+        n' = isomorphism n [1 .. l]
+        emove = EMove 0 (start n')
+    in NFA [0 .. l] (emove : moves n') [0] (0 : final n')
+
+reg_to_nfa' (Star r) = 
+    let n = reg_to_nfa' r 
+        l = length $ states n
+        n' = isomorphism n [1 .. l]
+        emoves = [EMove 0 (start n' ++ final n')] 
+            ++ [EMove f [0] | f <- final n']
+    in NFA [0 .. l] (emoves ++ moves n') [0] (final n')
+
+regs_to_distinct_nfa :: Reg -> Reg -> (Int, Int, NFA Int, NFA Int)
+regs_to_distinct_nfa r1 r2 = 
+    let n1 = reg_to_nfa' r1 
+        n2 = reg_to_nfa' r2
+         -- map the states to distinct ints
+    in differentiate_states n1 n2
 
 {-
 all states in the DFA are converted to sigleton sets
@@ -49,7 +104,7 @@ subset_constr' queue _ _ states moves | isEmpty queue = moves
 subset_constr' queue nfa alphabet visited moves = 
     let Just (states, queue') = dequeue queue
         moves' = [Move states c [ps] | c <- alphabet, 
-                let ps = concat [ p | q <- states, let p = delta nfa c q,
+                let ps = nub $ concat [p | q <- states, let p = delta nfa c q,
                         p /= []], ps /= []
             ]
         new_states = concat [ps | Move _ _ ps <- moves']
