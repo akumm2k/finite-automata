@@ -7,10 +7,10 @@ import Automaton
 {-
 * NFA: 
 (
-    finite set of states,
-    finite set of transitions,
-    starting state,
-    set of final states
+    finite set of states        q
+    finite set of transitions   delta
+    starting states             s0
+    set of final states         f
 )
 -}
 
@@ -26,14 +26,14 @@ data NFA a =
     NFA {statesN :: [a], movesN :: [(Move a)], startN :: [a], finalN :: [a]}
 
 instance (Show a) =>  Show (NFA a) where 
-    show (NFA q delta q0 f) = 
+    show (NFA q delta s0 f) = 
         "Q: " ++ show q ++ " \n" ++
         "delta: " ++ show delta ++ " \n" ++ 
-        "q0: " ++ show q0 ++ " \n" ++
+        "q0: " ++ show s0 ++ " \n" ++
         "F: " ++ show f 
 
 build_nfa :: Ord a => [a] -> [Move a] -> [a] -> [a] -> NFA a
-build_nfa q delta q0 f = NFA q delta q0 f
+build_nfa q delta s0 f = NFA q delta s0 f
 
 deltaN :: Eq a => NFA a -> Char -> a -> [a]
 deltaN nfa c p =
@@ -48,7 +48,7 @@ if p \in (epsilon_closure q) and EMove p r
     then r \in (epsilon_closure q)
 -}
 epsilon_closure' :: Eq a => NFA a -> [a] -> [a]
-epsilon_closure' n@(NFA q delta q0 f) qs = 
+epsilon_closure' n@(NFA q delta s0 f) qs = 
     let new_qs = [r | p <- qs, (EMove p' enp) <- delta, 
             p == p', r <- enp]
     in if null (new_qs \\ qs) then qs 
