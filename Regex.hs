@@ -1,3 +1,5 @@
+module Regex where 
+    
 data Reg =  
     Epsilon |
     Literal Char |
