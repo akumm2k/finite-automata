@@ -13,6 +13,7 @@ class Automaton at where
     moves :: at a -> [(Move a)]
     accepts :: (Eq a, Show a) => at a -> String -> Bool
     delta :: (Eq a) => at a -> Char -> a -> [a]
+    isomorphism :: (Show a, Eq a, Show b, Eq b) => at a -> [b] -> at b
 
 show_states :: Show a => [a] -> String
 show_states qs = intercalate ", " (show <$> qs)

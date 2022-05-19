@@ -4,6 +4,7 @@ module NFA (build_nfa, NFA(..), ExtMove(..),
 import Data.List
 import Debug.Trace
 import Automaton
+    ( Automaton(..), Move(EMove, Move, char, from, to) )
 
 {-
 * NFA: 
@@ -22,6 +23,7 @@ instance Automaton NFA where
     moves = movesN
     delta = deltaN
     accepts = acceptsN
+    isomorphism = isomorphismN
 
 data NFA a = 
     NFA {statesN :: [a], movesN :: [(Move a)], startN :: [a], finalN :: [a]}
@@ -101,7 +103,20 @@ elim_epsilon n@(NFA q ms q0 f) =
             ]
     in NFA q (deterministic_moves ++ new_moves) nq0 f'
 
-
+isomorphismN :: (Show a, Eq a, Show b, Eq b) => NFA a -> [b] -> NFA b 
+isomorphismN n@(NFA q moves s0 f) qs' =
+    let qs = states n 
+        h = zip qs qs' 
+        h_each = (\x -> let Just x' = lookup x h in x')
+        moves' = [(Move hp c hq) | (Move p c q) <- moves, 
+            let Just hp = lookup p h, let hq = h_each <$> q]
+            ++ 
+            [(EMove hp hq) | (EMove p q) <- moves, 
+            let Just hp = lookup p h, let hq = h_each <$> q]
+        f' = h_each <$> f 
+        s0' = h_each <$> s0 
+    in NFA qs' moves' s0' f'
+    
 {- 
 ExtendedMove NOT by words, but by multiple symbols 
 transitioning to the same state

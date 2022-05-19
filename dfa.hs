@@ -1,6 +1,7 @@
 module DFA (build_dfa, DFA(..)) where 
     
 import Debug.Trace
+import Prelude
 import Automaton
 {-
 * DFA: 
@@ -19,6 +20,7 @@ instance Automaton DFA where
     delta = deltaD 
     moves = movesD
     accepts = acceptsD
+    isomorphism = isomorphismD
 
 data DFA a = 
     DFA {statesD :: [a], movesD :: [(Move a)], startD :: [a], finalD :: [a]}
@@ -70,3 +72,14 @@ acceptsD dfa s =
     in case mq of 
         Just q -> q `elem` (final dfa)
         Nothing -> False
+
+isomorphismD :: (Show a, Eq a, Show b, Eq b) => DFA a -> [b] -> DFA b
+isomorphismD d@(DFA q moves [q0] f) qs' = 
+    let qs = states d
+        h = zip qs qs'
+        moves' = [(Move hp c [hq]) | (Move p c [q]) <- moves, 
+            let Just hp = (lookup p h), let Just hq = lookup q h]
+        Just q0' = lookup q0 h
+        f' = [x' | x <- f, let Just x' = lookup x h]
+    in DFA qs' moves' [q0'] f'
+isomorphismD _ _ = error "non-determinsm deteced"
