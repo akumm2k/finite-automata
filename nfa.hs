@@ -1,4 +1,5 @@
-module NFA (build_nfa, NFA(..), ExtMove(..), elim_epsilon) where 
+module NFA (build_nfa, NFA(..), ExtMove(..), 
+    elim_epsilon, extMove_to_move) where 
 import Data.List
 import Debug.Trace
 import Automaton
