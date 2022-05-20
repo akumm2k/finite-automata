@@ -114,7 +114,9 @@ split_part my_dfa [0, 1] [[0, 1], [2]] 2 =
     splits = [[0], [1]]
     (new_parts_len, zip [parts_len + 1 ..] splits)
         = (3,[(3,[0]),(4,[1])])
-        = (new_len, partitions with new ids)
+        = (added_len, partitions with new ids)
+We compute added_len to compute the length of the partition 
+and avoid using `length`
 -}
 split_part :: (Show a, Ord a) => 
     DFA a -> Set a -> [(Set a)] -> Int -> String -> (Int, [Set a])
@@ -132,16 +134,19 @@ split_part dfa part parts parts_len alphabet =
                 q `elem` (parts !! i)]
 
 {-
+* Table filling algorithm to find equivalent states
 at most n iterations where n = number of states in the dfa
 at each itr,
     for each part in the partition
         for each state
             record its transition to other partition 
         split the part based on the transitions 
-finish early if the 
+potential optimization: may finish early if the partitions don't change
 -}
 state_partition :: (Show a, Ord a) => 
     DFA a -> String -> [Set a] -> Int -> Int -> Int -> Int -> (Int, [Set a])
+-- return a list of equivalent states using the table filling algorithm
+-- described above
 state_partition d _ ps ps_len num_states i j 
     | j >= i || ps_len == num_states = (ps_len, ps)
 
@@ -151,27 +156,37 @@ state_partition d alphabet ps ps_len num_states i j =
         added_len = sum $ fst <$> x
     in state_partition d alphabet ps' (ps_len + added_len) num_states i (j + 1)
 
-
+{-
+remove unreachable states
+perform table filling algorithm to find equivalent states
+    first equivalence partition: [[non-final states], [final states]]
+    at most `size_of(states)` iterations
+        potential optimization: stop when the partitions are not split anymore
+update transitions based on the equivalent states
+-}
 minimize :: (Ord a, Show a) => DFA a -> DFA Int
 minimize d = 
     let alphabet = alphabet_of d
+        -- remove unreachable states
         reachable = dfs d alphabet
         unreachable = states d Set.\\ reachable
         fin = final d Set.\\ unreachable
         non_final = reachable Set.\\ fin
         n = length reachable
         p1 = (fromList [non_final, fin]) Set.\\ (fromList [empty])
+        -- get equivalent states
         (l, ps) = state_partition d alphabet (toList p1) (length p1) n n 0
+        -- build minimized dfa
         q = [0 .. l - 1] 
         p_to_id = zip ps q
-        delta = fromList $ update_delta d reachable p_to_id  
+        delta = update_delta d reachable p_to_id  
         f = fromList [get_id p_to_id f| f <- toList fin]
         q0 = fromList [get_id p_to_id $ head (toList $ start d)]
     in DFA (fromList q) delta q0 f 
 
-update_delta :: Ord a => DFA a -> Set a -> [(Set a, Int)] -> [Move Int]
+update_delta :: Ord a => DFA a -> Set a -> [(Set a, Int)] -> Set (Move Int)
 update_delta d@(DFA q' del' q0' f') reachable p_to_id = 
-    nub [Move a' c (singleton b') | (Move a c b'') <- toList $ moves d,
+    fromList [Move a' c (singleton b') | (Move a c b'') <- toList $ moves d,
         let [b] = toList b'',
         a `elem` reachable,
         let a' = get_id p_to_id a, 
@@ -179,14 +194,17 @@ update_delta d@(DFA q' del' q0' f') reachable p_to_id =
     ]
 
 get_id :: Ord a => [(Set a, Int)] -> a -> Int
+-- return set ids used in the table filling algorithm
 get_id p_to_id x = 
     head [id | (part, id) <- p_to_id, x `elem` part]
 
 adjacent :: (Show a, Ord a) => DFA a -> String -> a -> [a]
+-- return a list of adjacent states of p in DFA d 
 adjacent d alphabet p = 
     [head $ toList qs | c <- alphabet, let qs = delta d c p, qs /= empty] 
 
 dfs :: (Show a, Ord a) => DFA a -> String -> Set a
+-- find all reachable states in DFA d
 dfs d alphabet = fromList $ reverse $ loop s s
     where 
         loop visited [] = visited 
