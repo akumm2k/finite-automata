@@ -117,13 +117,9 @@ split_part my_dfa [0, 1] [[0, 1], [2]] 2 =
         = (new_len, partitions with new ids)
 -}
 split_part :: (Show a, Ord a) => 
-    DFA a -> Set a -> [(Set a)] -> Int -> (Int, [Set a])
-{-
-TODO: pass alphabet instead of recomp
--}
-split_part dfa part parts parts_len =
-    let alphabet = alphabet_of dfa
-        new_parts = [(p, ids) | p <- toList part, 
+    DFA a -> Set a -> [(Set a)] -> Int -> String -> (Int, [Set a])
+split_part dfa part parts parts_len alphabet =
+    let new_parts = [(p, ids) | p <- toList part, 
             let ids = [part_id q | c <- alphabet, 
                     let q' = delta dfa c p, q' /= empty,
                     let q = head $ toList q']]
@@ -145,15 +141,15 @@ at each itr,
 finish early if the 
 -}
 state_partition :: (Show a, Ord a) => 
-    DFA a -> [Set a] -> Int -> Int -> Int -> Int -> (Int, [Set a])
-state_partition d ps ps_len num_states i j 
+    DFA a -> String -> [Set a] -> Int -> Int -> Int -> Int -> (Int, [Set a])
+state_partition d _ ps ps_len num_states i j 
     | j >= i || ps_len == num_states = (ps_len, ps)
 
-state_partition d ps ps_len num_states i j = 
-    let x = [split_part d part ps ps_len | part <- ps]
+state_partition d alphabet ps ps_len num_states i j = 
+    let x = [split_part d part ps ps_len alphabet | part <- ps]
         ps' = concat $ snd <$> x 
         added_len = sum $ fst <$> x
-    in state_partition d ps' (ps_len + added_len) num_states i (j + 1)
+    in state_partition d alphabet ps' (ps_len + added_len) num_states i (j + 1)
 
 
 minimize :: (Ord a, Show a) => DFA a -> DFA Int
@@ -165,7 +161,7 @@ minimize d =
         non_final = reachable Set.\\ fin
         n = length reachable
         p1 = (fromList [non_final, fin]) Set.\\ (fromList [empty])
-        (l, ps) = state_partition d (toList p1) (length p1) n n 0
+        (l, ps) = state_partition d alphabet (toList p1) (length p1) n n 0
         q = [0 .. l - 1] 
         p_to_id = zip ps q
         delta = fromList $ update_delta d reachable p_to_id  
