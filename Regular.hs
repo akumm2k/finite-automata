@@ -8,6 +8,10 @@ import Queue
 import Data.List as List hiding (union)
 import Data.Set as Set 
 
+
+reg_to_dfa :: String -> DFA Int
+reg_to_dfa = minimize . to_dfa . reg_to_nfa 
+
 {-
 Reg to nfa
     r -> NFA q delta s0 f
