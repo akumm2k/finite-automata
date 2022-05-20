@@ -1,7 +1,5 @@
 module Regex where 
 
-import Data.Char 
-
 data Reg =  
     Epsilon |
     Literal Char |
@@ -39,7 +37,7 @@ regexp -    term | regexp '|' term
 valid_char :: Char -> Bool
 -- valid ascii range: [33, 126]
 valid_char = \x -> '!' <= x && x <= '~' 
-    && x /= '(' && x /= ')'
+    && not (x `elem` "()|*")
 
 primary :: String -> (Reg, String)
 primary ('(' : s) = 
