@@ -1,9 +1,10 @@
 module NFA where 
-        
-import Data.List
+
+import Prelude hiding (null)
+import Data.Set as Set   
 import Debug.Trace
 import Automaton
-
+import Data.List as List hiding (union)
 {-
 * NFA: 
 (
@@ -24,7 +25,7 @@ instance Automaton NFA where
     isomorphism = isomorphismN
 
 data NFA a = 
-    NFA {statesN :: [a], movesN :: [(Move a)], startN :: [a], finalN :: [a]}
+    NFA {statesN :: Set a, movesN :: Set (Move a), startN :: Set a, finalN :: Set a}
 
 instance (Show a) =>  Show (NFA a) where 
     show (NFA q delta s0 f) = 
@@ -33,54 +34,61 @@ instance (Show a) =>  Show (NFA a) where
         "q0: " ++ show s0 ++ " \n" ++
         "F: " ++ show f 
 
-build_nfa :: Ord a => [a] -> [Move a] -> [a] -> [a] -> NFA a
+build_nfa :: Ord a => Set a -> Set (Move a) -> Set a -> Set a -> NFA a
 build_nfa q delta s0 f = NFA q delta s0 f
 
-deltaN :: (Show a, Eq a) => NFA a -> Char -> a -> [a]
+deltaN :: (Show a, Ord a) => NFA a -> Char -> a -> Set a
 -- return the transition from p w/ c in nfa
 deltaN nfa c p =
     -- pattern match Move to avoid calling `char` on an epsilon move
-    let qs = concat [to m | m@(Move _ _ _) <- movesN nfa, 
+    let qs = listSetCat [s | m@(Move _ _ s) <- toList $ movesN nfa, 
             char m == c, from m == p]
-    in concatMap (epsilon_closure nfa) qs
+    in fromList $ listSetCat [epsilon_closure nfa q | q <- qs]
+
+setCat :: Ord a => Set (Set a) -> Set a 
+setCat = Set.foldr union Set.empty 
+
+listSetCat :: Ord a => [Set a] -> [a]
+listSetCat [] = [] 
+listSetCat [a, b] = toList (a `union` b)
+listSetCat (a : bs) = toList a ++ listSetCat bs
 
 {-
 q \in (epsilon_closure q)
 if p \in (epsilon_closure q) and EMove p r 
     then r \in (epsilon_closure q)
 -}
-epsilon_closure' :: (Show a, Eq a) => NFA a -> [a] -> [a]
-epsilon_closure' n@(NFA q delta s0 f) qs = 
-    let new_qs = nub [r | p <- qs, (EMove p' enp) <- delta, 
-            p == p', r <- enp]
-    in if null (new_qs \\ qs) then qs 
-    else epsilon_closure' n (nub $ qs ++ new_qs)
+epsilon_closure' :: (Show a, Ord a) => NFA a -> Set a -> Set a
+epsilon_closure' n@(NFA q del s0 f) qs = 
+    let new_qs = fromList [r | p <- toList qs, (EMove p' enp) <- toList del, 
+            p == p', r <- toList enp]
+    in if Set.null (new_qs Set.\\ qs) then qs 
+    else epsilon_closure' n (qs `union` new_qs)
 
-epsilon_closure :: (Show a, Eq a) => NFA a -> a -> [a]
+epsilon_closure :: (Show a, Ord a) => NFA a -> a -> Set a
 epsilon_closure n q' = 
-    epsilon_closure' n [q']
+    epsilon_closure' n (singleton q')
 
 {-
 delta_star(q, wa) | a :: Char, w :: String
     = epsilon_closure (delta(p, a) for all p in delta_star(q, w))
 -}
-delta_star' :: (Eq a, Show a) => [a] -> NFA a -> String -> Maybe [a] 
-delta_star' fs n [] = Just (concat ((epsilon_closure n) <$> fs))
+delta_star' :: (Ord a, Show a) => Set a -> NFA a -> String -> Maybe (Set a)
+delta_star' fs n [] = Just (setCat (Set.map (epsilon_closure n) fs))
 delta_star' qs nfa (c : cs) = 
-    let qs' = nub $ concatMap (epsilon_closure nfa) qs
-        next = concatMap (deltaN nfa c) qs'
-    in case next of 
-        [] -> Nothing 
-        _ -> delta_star' next nfa cs
+    let qs' = setCat (Set.map (epsilon_closure nfa) qs)
+        next = setCat (Set.map (deltaN nfa c) qs')
+    in if Set.null next then Nothing else 
+        delta_star' next nfa cs
 
-delta_star :: (Eq a, Show a) =>  NFA a -> String -> Maybe [a] 
+delta_star :: (Ord a, Show a) =>  NFA a -> String -> Maybe (Set a)
 delta_star nfa = delta_star' (startN nfa) nfa
 
-acceptsN :: (Eq a, Show a) => NFA a -> String -> Bool 
+acceptsN :: (Ord a, Show a) => NFA a -> String -> Bool 
 acceptsN nfa s = 
     let reached = delta_star nfa s 
     in case reached of 
-        Just qs -> or [f `elem` qs | f <- finalN nfa]
+        Just qs -> or [f `elem` qs | f <- toList $ finalN nfa]
         Nothing -> False
 
 {-
@@ -91,35 +99,35 @@ p \ q and q is a final state, then p is a final state
 for each `p \ q` elimination, create new move `p c r` such that
 there is a move `q c r`
 -}
-elim_epsilon :: (Show a, Eq a) => NFA a -> NFA a 
+elim_epsilon :: (Show a, Ord a) => NFA a -> NFA a 
 elim_epsilon n@(NFA q ms q0 f) = 
-    let nq0 = concatMap (epsilon_closure n) q0
-        nf = [p | q <- f, (EMove p qs) <- ms, q `elem` qs]
-        f' = f ++ nf 
-        deterministic_moves = [Move p c q' | (Move p c q) <- ms, 
-            let q' = concatMap (epsilon_closure n) q]
-        new_moves = [Move p c r | (EMove p qs) <- ms, 
-            q <- qs, (Move q' c r) <- ms, q == q'
+    let nq0 =  setCat (Set.map (epsilon_closure n) q0)
+        nf = [p | q <- toList f, (EMove p qs) <- toList ms, q `member` qs]
+        f' = f `union` (fromList nf )
+        deterministic_moves = [Move p c q' | (Move p c q) <- toList ms, 
+            let q' = setCat (Set.map (epsilon_closure n) q)]
+        new_moves = [Move p c r | (EMove p qs) <- toList ms, 
+            q <- toList qs, (Move q' c r) <- toList ms, q == q'
             ]
-    in NFA q (deterministic_moves ++ new_moves) nq0 f'
+    in NFA q (fromList $ deterministic_moves ++ new_moves) nq0 f'
 
-isomorphismN :: (Show a, Eq a, Show b, Eq b) => NFA a -> [b] -> NFA b 
+isomorphismN :: (Show a, Ord a, Show b, Ord b) => NFA a -> Set b -> NFA b 
 -- return an isomorphic NFA with states(NFA) renamed to qs'
 isomorphismN n@(NFA q moves s0 f) qs' =
     let qs = states n 
-        h = zip qs qs' 
+        h = zip (toList qs) (toList qs')
         h_each = (\x -> case lookup x h of 
             Just x' -> x' 
             Nothing -> error ""
             )
-        moves' = [(Move hp c hq) | (Move p c q) <- moves, 
-            let Just hp = lookup p h, let hq = h_each <$> q]
+        moves' = [(Move hp c hq) | (Move p c q) <- toList moves, 
+            let Just hp = lookup p h, let hq = (Set.map h_each q)]
             ++ 
-            [(EMove hp hq) | (EMove p q) <- moves, 
-            let Just hp = lookup p h, let hq = h_each <$> q]
-        f' = h_each <$> f 
-        s0' = h_each <$> s0 
-    in NFA qs' moves' s0' f'
+            [(EMove hp hq) | (EMove p q) <- toList moves, 
+            let Just hp = lookup p h, let hq = (Set.map h_each q)]
+        f' = Set.map h_each f 
+        s0' = Set.map h_each s0 
+    in NFA qs' (fromList moves') s0' f'
     
 {- 
 ExtendedMove NOT by words, but by multiple symbols 
@@ -131,8 +139,8 @@ ExtMove 0 "+-" [1, 2] =
 data ExtMove a = ExtMove a String [a]
 
 -- split an extended move into a non deterministive moves
-extMove_to_move :: [ExtMove a] -> [Move a]
-extMove_to_move movesN = 
-    [Move p c q | (ExtMove p cs q) <- movesN, cs /= "", c <- cs]
+extMove_to_move :: Ord a => [ExtMove a] -> Set (Move a)
+extMove_to_move movesN = fromList $
+    [Move p c (fromList q) | (ExtMove p cs q) <- movesN, cs /= "", c <- cs]
     ++ 
-    [EMove p q | (ExtMove p "" q) <- movesN]
+    [EMove p (fromList q) | (ExtMove p "" q) <- movesN]
