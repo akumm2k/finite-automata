@@ -12,7 +12,7 @@ class Automaton at where
     final :: at a -> [a]
     moves :: at a -> [(Move a)]
     accepts :: (Eq a, Show a) => at a -> String -> Bool
-    delta :: (Eq a) => at a -> Char -> a -> [a]
+    delta :: (Eq a, Show a) => at a -> Char -> a -> [a]
     isomorphism :: (Show a, Eq a, Show b, Eq b) => at a -> [b] -> at b
 
 show_states :: Show a => [a] -> String

@@ -37,7 +37,7 @@ instance (Show a) =>  Show (NFA a) where
 build_nfa :: Ord a => [a] -> [Move a] -> [a] -> [a] -> NFA a
 build_nfa q delta s0 f = NFA q delta s0 f
 
-deltaN :: Eq a => NFA a -> Char -> a -> [a]
+deltaN :: (Show a, Eq a) => NFA a -> Char -> a -> [a]
 -- return the transition from p w/ c in nfa
 deltaN nfa c p =
     -- pattern match Move to avoid calling `char` on an epsilon move
@@ -50,14 +50,14 @@ q \in (epsilon_closure q)
 if p \in (epsilon_closure q) and EMove p r 
     then r \in (epsilon_closure q)
 -}
-epsilon_closure' :: Eq a => NFA a -> [a] -> [a]
+epsilon_closure' :: (Show a, Eq a) => NFA a -> [a] -> [a]
 epsilon_closure' n@(NFA q delta s0 f) qs = 
-    let new_qs = [r | p <- qs, (EMove p' enp) <- delta, 
+    let new_qs = nub [r | p <- qs, (EMove p' enp) <- delta, 
             p == p', r <- enp]
     in if null (new_qs \\ qs) then qs 
     else epsilon_closure' n (nub $ qs ++ new_qs)
 
-epsilon_closure :: Eq a => NFA a -> a -> [a]
+epsilon_closure :: (Show a, Eq a) => NFA a -> a -> [a]
 epsilon_closure n q' = 
     epsilon_closure' n [q']
 
@@ -92,7 +92,7 @@ p \ q and q is a final state, then p is a final state
 for each `p \ q` elimination, create new move `p c r` such that
 there is a move `q c r`
 -}
-elim_epsilon :: Eq a => NFA a -> NFA a 
+elim_epsilon :: (Show a, Eq a) => NFA a -> NFA a 
 elim_epsilon n@(NFA q ms q0 f) = 
     let nq0 = concatMap (epsilon_closure n) q0
         nf = [p | q <- f, (EMove p qs) <- ms, q `elem` qs]
