@@ -29,10 +29,10 @@ data NFA a =
 
 instance (Show a) =>  Show (NFA a) where 
     show (NFA q delta s0 f) = 
-        "Q: " ++ show q ++ " \n" ++
-        "delta: " ++ show delta ++ " \n" ++ 
-        "q0: " ++ show s0 ++ " \n" ++
-        "F: " ++ show f 
+        "Q: " ++ show (toList q) ++ " \n" ++
+        "delta: " ++ show (toList delta) ++ " \n" ++ 
+        "q0: " ++ show (toList s0) ++ " \n" ++
+        "F: " ++ show (toList f) 
 
 build_nfa :: Ord a => Set a -> Set (Move a) -> Set a -> Set a -> NFA a
 build_nfa q delta s0 f = NFA q delta s0 f

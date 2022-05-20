@@ -5,7 +5,8 @@ import DFA
 import NFA 
 import Regex
 import Queue
-import Data.List
+import Data.List as List hiding (union)
+import Data.Set as Set 
 
 {-
 Reg to nfa
@@ -15,42 +16,51 @@ reg_to_nfa :: String -> NFA Int
 reg_to_nfa = reg_to_nfa' . get_reg 
 
 reg_to_nfa' :: Reg -> NFA Int
-reg_to_nfa' Epsilon = NFA [0] [] [0] [0]
+reg_to_nfa' Epsilon = NFA z Set.empty z z
+    where z = singleton 0
     -- Epsilon = NFA [0] [] [0] [0]
 
-reg_to_nfa' (Literal c) = NFA [0, 1] [Move 0 c [1]] [0] [1]
+reg_to_nfa' (Literal c) = NFA q ms (singleton 0) (singleton 1)
+    where 
+        q = (fromList [0, 1])
+        ms = singleton (Move 0 c (singleton 1))
     -- Literal c = NFA [0, 1] [0 - c -> 1] [1]
 
 reg_to_nfa' (Or r1 r2) = 
     --  Or r1 r2: new start -\-> [start n1, start n2]
     let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
-        emove = EMove 0 (start n1' ++ start n2')
-    in (NFA [0 .. l1 + l2] (emove : (moves n1' ++ moves n2')) 
-        [0] (final n1' ++ final n2'))
+        emove = singleton $ EMove 0 (start n1' `union` start n2')
+    in (NFA (fromList [0 .. l1 + l2])
+        (emove `union` (moves n1' `union` moves n2')) 
+        (singleton 0) (final n1' `union` final n2'))
 
 reg_to_nfa' (Then r1 r2) = 
     -- Then r1 r2: final n1 -\-> start n2
     let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
-        emoves = [EMove en1 (start n2') | en1 <- final n1']
-    in (NFA [1 .. l1 + l2] (emoves ++ moves n1' ++ moves n2')
+        emoves = fromList 
+            [EMove en1 (start n2') | en1 <- toList $ final n1']
+    in (NFA (fromList [1 .. l1 + l2]) 
+        (emoves `union` moves n1' `union` moves n2')
         (start n1') (final n2'))
 
 reg_to_nfa' (Opt r) = 
     -- Opt r1: new start -\-> start n1 | new start \in final
     let n = reg_to_nfa' r 
         l = length $ states n
-        n' = isomorphism n [1 .. l]
-        emove = EMove 0 (start n')
-    in NFA [0 .. l] (emove : moves n') [0] (0 : final n')
+        n' = isomorphism n (fromList [1 .. l])
+        emove = singleton $ EMove 0 (start n')
+    in NFA (fromList [0 .. l]) (emove `union` moves n') 
+        (singleton 0) (singleton 0 `union` final n')
 
 reg_to_nfa' (Star r) = 
     -- Star r1: new start <-\-> final n1, and new start -\-> start n1
     let n = reg_to_nfa' r 
         l = length $ states n
-        n' = isomorphism n [1 .. l]
-        emoves = [EMove 0 (start n' ++ final n')] 
-            ++ [EMove f [0] | f <- final n']
-    in NFA [0 .. l] (emoves ++ moves n') [0] (final n')
+        n' = isomorphism n (fromList [1 .. l])
+        emoves = fromList ([EMove 0 (start n' `union` final n')] 
+            ++ [EMove f (singleton 0) | f <- toList $ final n'])
+    in NFA (fromList [0 .. l]) 
+        (emoves `union` moves n') (singleton 0) (final n')
 
 regs_to_distinct_nfa :: Reg -> Reg -> (Int, Int, NFA Int, NFA Int)
 -- given two regs, get their corresponding distinct NFAs w/ their lengths
@@ -112,12 +122,12 @@ subset_constr' queue nfa alphabet visited moves =
             ]
         new_states = concat [ps | Move _ _ ps <- moves']
         visited' = states : visited 
-        new_queue = foldr enqueue queue' (new_states \\ visited')
+        new_queue = List.foldr enqueue queue' (new_states List.\\ visited')
     in subset_constr' new_queue nfa alphabet visited' (moves ++ moves')
 
 subset_constr :: (Show a, Eq a) => NFA a -> [Move [a]]
 subset_constr n@(NFA q moves q0 f) = 
-    let queue = foldr enqueue empty (subsets q)
+    let queue = List.foldr enqueue Queue.empty (subsets q)
     in subset_constr' queue n (alphabet_of n) [] []
 
 subsets' :: [a] -> [[a]]
@@ -128,4 +138,4 @@ subsets' (x : xs) =
     where rest = subsets' xs
 
 subsets :: Eq a => [a] -> [[a]]
-subsets xs = delete [] $ subsets' xs
+subsets xs = List.delete [] $ subsets' xs

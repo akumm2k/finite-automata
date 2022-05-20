@@ -30,5 +30,7 @@ my_f = singleton 5
 my_nfa :: NFA Int
 my_nfa = NFA my_q (extMove_to_move my_delta) my_q0 my_f 
 
--- n :: NFA Int
--- n = NFA [0 .. 3] [(EMove 0 [1]), (Move 1 '1' [2]), (EMove 2 [3])] [0] [3]
+n :: NFA Int
+n = NFA (fromList [0 .. 3]) 
+    (fromList [(EMove 0 (singleton 1)), (Move 1 '1' (singleton 2)), 
+        (EMove 2 (singleton 3))]) (singleton 0) (singleton 3)
