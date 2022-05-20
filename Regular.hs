@@ -120,9 +120,12 @@ subset_constr n@(NFA q moves q0 f) =
     let queue = foldr enqueue empty (subsets q)
     in subset_constr' queue n (alphabet_of n) [] []
 
-subsets :: [a] -> [[a]]
+subsets' :: [a] -> [[a]]
 -- an FSM has a finite powerset
-subsets [] = [[]]
-subsets (x : xs) = 
+subsets' [] = [[]]
+subsets' (x : xs) = 
     [x : r | r <- rest] ++ rest 
-    where rest = subsets xs
+    where rest = subsets' xs
+
+subsets :: Eq a => [a] -> [[a]]
+subsets xs = delete [] $ subsets' xs
