@@ -3,7 +3,6 @@ module NFA where
 import Data.List
 import Debug.Trace
 import Automaton
-    ( Automaton(..), Move(EMove, Move, char, from, to) )
 
 {-
 * NFA: 
