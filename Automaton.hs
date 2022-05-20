@@ -50,9 +50,11 @@ differentiate_states a1 a2 =
     in (l1, l2, a1', a2')
 
 setCat :: Ord a => Set (Set a) -> Set a 
+-- concat a set of sets into a set
 setCat = Set.foldr union Set.empty 
 
 listSetCat :: Ord a => [Set a] -> [a]
+-- concat a list of sets of a into a list of a
 listSetCat [] = [] 
 listSetCat [a, b] = toList (a `union` b)
 listSetCat (a : bs) = toList a ++ listSetCat bs
