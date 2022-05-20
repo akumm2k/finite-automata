@@ -6,7 +6,7 @@
 - [x] building nfas, and dfas
 - [x] converting from nfa -> dfa
 - [x] converting from regex -> nfa
-- [ ] minimizing dfas
+- [x] minimizing dfas
 
 ## Questions
 
