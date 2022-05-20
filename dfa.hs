@@ -30,10 +30,10 @@ data DFA a =
 
 instance (Show a) =>  Show (DFA a) where 
     show (DFA q delta q0 f) = 
-        "Q: " ++ show q ++ " \n" ++
-        "delta: " ++ show delta ++ " \n" ++ 
+        "Q: " ++ show (toList q) ++ " \n" ++
+        "delta: " ++ show (toList delta) ++ " \n" ++ 
         "q0: " ++ show q0' ++ " \n" ++
-        "F: " ++ show f 
+        "F: " ++ show (toList f) 
         where [q0'] = toList q0 
 
 build_dfa :: Ord a => Set a -> Set (Move a) -> Set a -> Set a -> DFA a
