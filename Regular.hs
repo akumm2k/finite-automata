@@ -90,7 +90,7 @@ the following is the equivalent DFA
 -}
 to_dfa :: (Ord a, Show a) => NFA a -> DFA (Set a)
 to_dfa n = 
-    DFA (subsets q) delta' (singleton s0) f'
+    DFA (powerSet q) delta' (singleton s0) f'
     where 
         n'@(NFA q delta s0 f) = elim_epsilon n
         delta' = subset_constr n'
@@ -117,23 +117,26 @@ subset_constr' :: queue nfa alphabet states visited_states
 subset_constr' :: (Show a, Ord a) => FQueue (Set a) -> NFA a -> String 
     -> [Set a] -> Set (Move (Set a)) -> Set (Move (Set a))
 subset_constr' queue _ _ states moves | isEmpty queue = moves 
+
 subset_constr' queue nfa alphabet visited moves = 
     let Just (states, queue') = dequeue queue
+
         moves' = fromList [Move states c (singleton ps) | c <- alphabet, 
                 let ps =  fromList $ listSetCat [p | q <- toList states, 
                         let p = delta nfa c q, p /= Set.empty], 
                     ps /= Set.empty
-            ]
-        new_states = fromList $ listSetCat [ps | Move _ _ ps <- toList moves']
+            ] -- compute new transitions skipping empty ones
+            
+        new_states = 
+            fromList $ listSetCat [ps | Move _ _ ps <- toList moves']
         visited' = states : visited 
-        new_queue = List.foldr enqueue queue' ((toList new_states) List.\\ visited')
-    in subset_constr' new_queue nfa alphabet visited' (moves `union` moves')
+        
+        new_queue = 
+            List.foldr enqueue queue' ((toList new_states) List.\\ visited')
+    in 
+        subset_constr' new_queue nfa alphabet visited' (moves `union` moves')
 
 subset_constr :: (Show a, Ord a) => NFA a -> Set (Move (Set a))
 subset_constr n@(NFA q moves q0 f) = 
-    let queue = List.foldr enqueue Queue.empty (subsets q)
+    let queue = List.foldr enqueue Queue.empty (powerSet q)
     in subset_constr' queue n (alphabet_of n) [] Set.empty
-
-
-subsets :: Set a -> Set (Set a)
-subsets = powerSet 
