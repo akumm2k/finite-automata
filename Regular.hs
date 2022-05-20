@@ -88,15 +88,18 @@ for an NFA (Q, delta, S0, F)
 the following is the equivalent DFA
 (P(Q), delta', {S0}, {q | q intersetion f is not null for q in P(Q)})
 -}
-to_dfa :: (Eq a, Show a) => NFA a -> DFA [a]
+to_dfa :: (Ord a, Show a) => NFA a -> DFA (Set a)
 to_dfa n = 
-    DFA (subsets q) delta' [s0] f'
+    DFA (subsets q) delta' (singleton s0) f'
     where 
         n'@(NFA q delta s0 f) = elim_epsilon n
         delta' = subset_constr n'
-        f' = nub $
-            concat [[p] | (Move _ _ [p]) <- delta', intersect p f /= []]
-            ++ [q | (Move q _ _) <- delta', intersect q f /= []]
+        f' = fromList $  
+            ([p' | (Move _ _ p) <- toList delta', let [p'] = toList p, 
+            intersection p' f /= Set.empty]
+            ++ 
+            [q | (Move q _ _) <- toList delta', 
+                intersection q f /= Set.empty])
 
 {-
 * Subset Construction for nfa n
@@ -111,31 +114,26 @@ Build new transitions
 subset_constr' :: queue nfa alphabet states visited_states 
     constructed_moves_so_far
 -}
-subset_constr' :: (Show a, Eq a) => FQueue [a] -> NFA a -> String 
-    -> [[a]] -> [Move [a]] -> [Move [a]]
+subset_constr' :: (Show a, Ord a) => FQueue (Set a) -> NFA a -> String 
+    -> [Set a] -> Set (Move (Set a)) -> Set (Move (Set a))
 subset_constr' queue _ _ states moves | isEmpty queue = moves 
 subset_constr' queue nfa alphabet visited moves = 
     let Just (states, queue') = dequeue queue
-        moves' = [Move states c [ps] | c <- alphabet, 
-                let ps = nub $ concat [p | q <- states, 
-                        let p = delta nfa c q, p /= []], ps /= []
+        moves' = fromList [Move states c (singleton ps) | c <- alphabet, 
+                let ps =  fromList $ listSetCat [p | q <- toList states, 
+                        let p = delta nfa c q, p /= Set.empty], 
+                    ps /= Set.empty
             ]
-        new_states = concat [ps | Move _ _ ps <- moves']
+        new_states = fromList $ listSetCat [ps | Move _ _ ps <- toList moves']
         visited' = states : visited 
-        new_queue = List.foldr enqueue queue' (new_states List.\\ visited')
-    in subset_constr' new_queue nfa alphabet visited' (moves ++ moves')
+        new_queue = List.foldr enqueue queue' ((toList new_states) List.\\ visited')
+    in subset_constr' new_queue nfa alphabet visited' (moves `union` moves')
 
-subset_constr :: (Show a, Eq a) => NFA a -> [Move [a]]
+subset_constr :: (Show a, Ord a) => NFA a -> Set (Move (Set a))
 subset_constr n@(NFA q moves q0 f) = 
     let queue = List.foldr enqueue Queue.empty (subsets q)
-    in subset_constr' queue n (alphabet_of n) [] []
+    in subset_constr' queue n (alphabet_of n) [] Set.empty
 
-subsets' :: [a] -> [[a]]
--- an FSM has a finite powerset
-subsets' [] = [[]]
-subsets' (x : xs) = 
-    [x : r | r <- rest] ++ rest 
-    where rest = subsets' xs
 
-subsets :: Eq a => [a] -> [[a]]
-subsets xs = List.delete [] $ subsets' xs
+subsets :: Set a -> Set (Set a)
+subsets = powerSet 
