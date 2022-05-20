@@ -28,10 +28,10 @@ data DFA a =
     DFA {statesD :: Set a, movesD :: Set (Move a), 
         startD :: Set a, finalD :: Set a}
 
-instance (Show a) =>  Show (DFA a) where 
+instance (Show a, Ord a) =>  Show (DFA a) where 
     show (DFA q delta q0 f) = 
         "Q: " ++ show (toList q) ++ " \n" ++
-        "delta: " ++ show (toList delta) ++ " \n" ++ 
+        "delta: " ++ show (sort (toList delta)) ++ " \n" ++ 
         "q0: " ++ show q0' ++ " \n" ++
         "F: " ++ show (toList f) 
         where [q0'] = toList q0 

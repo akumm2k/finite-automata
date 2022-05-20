@@ -2,11 +2,6 @@ module Automaton where
 import Data.List as List hiding (union)
 import Data.Set as Set
 
-data Move a = 
-    Move {from :: a, char :: Char, to :: Set a} 
-    | EMove {efrom :: a, eto :: Set a}
-    deriving (Eq, Ord)
-
 class Automaton at where 
     states :: at a -> Set a
     start :: at a -> Set a
@@ -19,6 +14,17 @@ class Automaton at where
 show_states :: Show a => Set a -> String
 -- show_states [1, 2, 3] = "1, 2, 3"
 show_states qs = intercalate ", " (show <$> (toList qs))
+
+data Move a = 
+    Move {from :: a, char :: Char, to :: Set a} 
+    | EMove {efrom :: a, eto :: Set a}
+    deriving (Eq)
+
+instance (Ord a) => Ord (Move a) where 
+    (<=) (Move p _ _) (EMove q _) = p <= q
+    (<=) (Move p c1 _) (Move q c2 _) = (p, c1) <= (q, c2)
+    (<=) (EMove p _) (EMove q _) = p <= q
+    (<=) _ _ = True
 
 instance (Show a) => Show (Move a) where 
     show (Move q c ps) = 

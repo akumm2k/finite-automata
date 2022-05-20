@@ -27,10 +27,10 @@ instance Automaton NFA where
 data NFA a = 
     NFA {statesN :: Set a, movesN :: Set (Move a), startN :: Set a, finalN :: Set a}
 
-instance (Show a) =>  Show (NFA a) where 
+instance (Show a, Ord a) =>  Show (NFA a) where 
     show (NFA q delta s0 f) = 
         "Q: " ++ show (toList q) ++ " \n" ++
-        "delta: " ++ show (toList delta) ++ " \n" ++ 
+        "delta: " ++ show (sort $ (toList delta)) ++ " \n" ++ 
         "q0: " ++ show (toList s0) ++ " \n" ++
         "F: " ++ show (toList f) 
 
