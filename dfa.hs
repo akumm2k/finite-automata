@@ -4,6 +4,7 @@ import Debug.Trace
 import Prelude
 import Automaton
 import Data.List
+import Data.Graph (reachable)
 {-
 * DFA: 
 (
@@ -153,27 +154,41 @@ state_partition d ps ps_len num_states i j =
 
 minimize :: (Eq a, Show a) => DFA a -> DFA Int
 minimize d = 
-    let non_final = states d \\ final d 
-        n = length $ states d
-        (l, ps) = state_partition d [non_final, final d] 2 n n 0
+    let alphabet = alphabet_of d
+        reachable = dfs d alphabet
+        unreachable = states d \\ reachable
+        fin = final d \\ unreachable
+        non_final = reachable \\ fin
+        n = length reachable
+        p1 = (nub [non_final, fin]) \\ [[]]
+        (l, ps) = state_partition d p1 (length p1) n n 0
         q = [0 .. l - 1] 
-        p_to_id = zip ps q
-        delta = update_delta d p_to_id  
-        f = nub [get_id p_to_id f| f <- final d]
+        p_to_id = zip (delete [] ps) q
+        delta = update_delta d reachable p_to_id  
+        f = nub [get_id p_to_id f| f <- fin]
         q0 = [get_id p_to_id $ head (start d)]
     in DFA q delta q0 f 
 
-update_final :: Eq a => DFA a -> [([a], Int)] -> [Int]
-update_final d p_to_id = [get_id p_to_id f| f <- final d]
-
-update_delta :: Eq a => DFA a -> [([a], Int)] -> [Move Int]
-update_delta d@(DFA q' del' q0' f') p_to_id = 
+update_delta :: Eq a => DFA a -> [a] -> [([a], Int)] -> [Move Int]
+update_delta d@(DFA q' del' q0' f') reachable p_to_id = 
     nub [Move a' c [b'] | (Move a c [b]) <- moves d,
-                    let a' = get_id p_to_id a, 
-                    let b' = get_id p_to_id b
-        ]
+        a `elem` reachable,
+        let a' = get_id p_to_id a, 
+        let b' = get_id p_to_id b
+    ]
 
 get_id :: Eq a => [([a], Int)] -> a -> Int
 get_id p_to_id x = 
     head [id | (part, id) <- p_to_id, x `elem` part]
-        
+
+adjacent :: (Show a, Eq a) => DFA a -> String -> a -> [a]
+adjacent d alphabet p = [head qs | c <- alphabet, let qs = delta d c p, qs /= []] 
+
+dfs :: (Show a, Eq a) => DFA a -> String -> [a]
+dfs d alphabet = reverse $ loop s s
+    where 
+        loop visited [] = visited 
+        loop visited (v : vs) = 
+            let ns = adjacent d alphabet v \\ visited 
+            in loop (ns ++ visited) (ns ++ vs)
+        s = start d
