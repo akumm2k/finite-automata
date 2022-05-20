@@ -3,8 +3,8 @@ module DFA where
 import Debug.Trace
 import Prelude
 import Automaton
-import Data.List
-import Data.Graph (reachable)
+import Data.Set as Set
+import Data.List as List
 {-
 * DFA: 
 (
@@ -25,8 +25,8 @@ instance Automaton DFA where
     isomorphism = isomorphismD
 
 data DFA a = 
-    DFA {statesD :: [a], movesD :: [(Move a)], 
-        startD :: [a], finalD :: [a]}
+    DFA {statesD :: Set a, movesD :: Set (Move a), 
+        startD :: Set a, finalD :: Set a}
 
 instance (Show a) =>  Show (DFA a) where 
     show (DFA q delta q0 f) = 
@@ -34,71 +34,75 @@ instance (Show a) =>  Show (DFA a) where
         "delta: " ++ show delta ++ " \n" ++ 
         "q0: " ++ show q0' ++ " \n" ++
         "F: " ++ show f 
-        where [q0'] = q0 
+        where [q0'] = toList q0 
 
-build_dfa :: Ord a => [a] -> [Move a] -> [a] -> [a] -> DFA a
+build_dfa :: Ord a => Set a -> Set (Move a) -> Set a -> Set a -> DFA a
 build_dfa q delta q0 f = 
-    if is_deterministic (delta, q0)  then DFA q delta q0 f
+    if is_deterministic (delta, q0) then DFA q delta q0 f
     else error ("Non-deterministic move detected.")
 
-is_deterministic :: ([Move a], [a]) -> Bool 
+is_deterministic :: (Set (Move a), Set a) -> Bool 
 -- return true if the moves have only one sink state
 is_deterministic (ms, q0) = 
-    and [null $ tail q | (Move _ _ q) <- ms] 
-    && null [1 | (EMove _ _) <- ms] 
-    && null (tail q0)
+    and [List.null $ tail (toList q) | (Move _ _ q) <- toList ms] 
+    && List.null [1 | (EMove _ _) <- toList ms] 
+    && (List.null $ tail $ toList q0)
 
-deltaD :: Eq a => DFA a -> Char -> a -> [a]
+deltaD :: Ord a => DFA a -> Char -> a -> Set a
 -- return the transition from p w/ c in dfa
 deltaD dfa c p =
-    concat [to m | m <- movesD dfa, char m == c, from m == p]
+    fromList $ listSetCat 
+        [to m | m <- toList $ movesD dfa, char m == c, from m == p]
 
 {-
 delta_star(q, wa) | w :: String, a :: Char 
     = delta( delta_star(q, w), a ) 
 -}
-delta_star' :: (Eq a, Show a) => a -> DFA a -> String -> Maybe a 
+delta_star' :: (Ord a, Show a) => a -> DFA a -> String -> Maybe a 
 delta_star' f _ [] = Just f 
 delta_star' q dfa (c : cs) = 
     let next = delta dfa c q
-    in case next of 
+    in case toList next of 
         [] -> Nothing 
         [p] -> delta_star' p dfa cs
         _ -> error ("Non-deterministic move detected " ++ show q 
             ++ " - " ++ [c] ++ " -> " ++ show next)
 
-delta_star :: (Eq a, Show a) => DFA a -> String -> Maybe a 
+delta_star :: (Ord a, Show a) => DFA a -> String -> Maybe a 
 delta_star dfa = delta_star' s dfa
-    where [s] = start dfa
+    where [s] = toList $ start dfa
 
-acceptsD :: (Eq a, Show a) => DFA a -> String -> Bool 
+acceptsD :: (Ord a, Show a) => DFA a -> String -> Bool 
 acceptsD dfa s = 
     let mq = delta_star dfa s 
     in case mq of 
         Just q -> q `elem` (final dfa)
         Nothing -> False
 
-isomorphismD :: (Show a, Eq a, Show b, Eq b) => 
-    DFA a -> [b] -> DFA b
+isomorphismD :: (Show a, Ord a, Show b, Ord b) => 
+    DFA a -> Set b -> DFA b
 -- return an isomorphic dfa w/ states(DFA) renamed to qs'
-isomorphismD d@(DFA q moves [q0] f) qs' = 
-    let qs = states d
+isomorphismD d@(DFA q moves q0 f) qs'' = 
+    let qs = toList $ states d
+        qs' = toList qs''
         h = zip qs qs'
-        moves' = [(Move hp c [hq]) | (Move p c [q]) <- moves, 
-            let Just hp = (lookup p h), let Just hq = lookup q h]
-        Just q0' = lookup q0 h
-        f' = [x' | x <- f, let Just x' = lookup x h]
-    in DFA qs' moves' [q0'] f'
-isomorphismD _ _ = error "non-determinsm deteced"
+        [q0'] = toList q0
+        moves' = fromList [(Move hp c (singleton hq)) | 
+            (Move p c q) <- toList moves, let [q'] = toList q, 
+            let Just hp = (lookup p h), let Just hq = lookup q' h]
+        Just q0'' = lookup q0' h
+        f' = fromList [x' | x <- toList f, let Just x' = lookup x h]
+    in DFA (fromList qs') moves' (singleton q0'') f'
+-- isomorphismD _ _ = error "non-determinsm deteced"
 
-reverse_dict :: (Eq a, Eq b) => [(a, b)] -> [(b, [a])] 
+reverse_dict :: (Ord a, Ord b) => [(a, b)] -> [(b, Set a)] 
 -- reverse an assoc list 
 -- [(0,[0,0]),(1,[0,0])] -> [([0,0],[0,1])]
 reverse_dict d = 
     let new_keys = nub $ snd <$> d
     in [(k, v) | k <- new_keys, 
-        let v = [k' | k' <- fst <$> d, let (Just v') = lookup k' d, 
-                v' == k]
+        let v = fromList [k' | k' <- fst <$> d, 
+                let (Just v') = lookup k' d, v' == k]
         ]
 
 {-
@@ -112,18 +116,18 @@ split_part my_dfa [0, 1] [[0, 1], [2]] 2 =
         = (3,[(3,[0]),(4,[1])])
         = (new_len, partitions with new ids)
 -}
-split_part :: (Show a, Eq a) => 
-    DFA a -> [a] -> [[a]] -> Int -> (Int, [[a]])
+split_part :: (Show a, Ord a) => 
+    DFA a -> Set a -> [(Set a)] -> Int -> (Int, [Set a])
 {-
 TODO: pass alphabet instead of recomp
 -}
 split_part dfa part parts parts_len =
     let alphabet = alphabet_of dfa
-        new_parts = [(p, ids) | p <- part, 
+        new_parts = [(p, ids) | p <- toList part, 
             let ids = [part_id q | c <- alphabet, 
-                    let q' = delta dfa c p, q' /= [],
-                    let q = head q']]
-        splits = snd <$> reverse_dict new_parts
+                    let q' = delta dfa c p, q' /= empty,
+                    let q = head $ toList q']]
+        splits =  snd <$> reverse_dict new_parts
         added_len = length splits - 1
     in (added_len, splits)
     where 
@@ -140,8 +144,8 @@ at each itr,
         split the part based on the transitions 
 finish early if the 
 -}
-state_partition :: (Show a, Eq a) => 
-    DFA a -> [[a]] -> Int -> Int -> Int -> Int -> (Int, [[a]])
+state_partition :: (Show a, Ord a) => 
+    DFA a -> [Set a] -> Int -> Int -> Int -> Int -> (Int, [Set a])
 state_partition d ps ps_len num_states i j 
     | j >= i || ps_len == num_states = (ps_len, ps)
 
@@ -152,43 +156,45 @@ state_partition d ps ps_len num_states i j =
     in state_partition d ps' (ps_len + added_len) num_states i (j + 1)
 
 
-minimize :: (Eq a, Show a) => DFA a -> DFA Int
+minimize :: (Ord a, Show a) => DFA a -> DFA Int
 minimize d = 
     let alphabet = alphabet_of d
         reachable = dfs d alphabet
-        unreachable = states d \\ reachable
-        fin = final d \\ unreachable
-        non_final = reachable \\ fin
+        unreachable = states d Set.\\ reachable
+        fin = final d Set.\\ unreachable
+        non_final = reachable Set.\\ fin
         n = length reachable
-        p1 = (nub [non_final, fin]) \\ [[]]
-        (l, ps) = state_partition d p1 (length p1) n n 0
+        p1 = (fromList [non_final, fin]) Set.\\ (fromList [empty])
+        (l, ps) = state_partition d (toList p1) (length p1) n n 0
         q = [0 .. l - 1] 
-        p_to_id = zip (delete [] ps) q
-        delta = update_delta d reachable p_to_id  
-        f = nub [get_id p_to_id f| f <- fin]
-        q0 = [get_id p_to_id $ head (start d)]
-    in DFA q delta q0 f 
+        p_to_id = zip ps q
+        delta = fromList $ update_delta d reachable p_to_id  
+        f = fromList [get_id p_to_id f| f <- toList fin]
+        q0 = fromList [get_id p_to_id $ head (toList $ start d)]
+    in DFA (fromList q) delta q0 f 
 
-update_delta :: Eq a => DFA a -> [a] -> [([a], Int)] -> [Move Int]
+update_delta :: Ord a => DFA a -> Set a -> [(Set a, Int)] -> [Move Int]
 update_delta d@(DFA q' del' q0' f') reachable p_to_id = 
-    nub [Move a' c [b'] | (Move a c [b]) <- moves d,
+    nub [Move a' c (singleton b') | (Move a c b'') <- toList $ moves d,
+        let [b] = toList b'',
         a `elem` reachable,
         let a' = get_id p_to_id a, 
         let b' = get_id p_to_id b
     ]
 
-get_id :: Eq a => [([a], Int)] -> a -> Int
+get_id :: Ord a => [(Set a, Int)] -> a -> Int
 get_id p_to_id x = 
     head [id | (part, id) <- p_to_id, x `elem` part]
 
-adjacent :: (Show a, Eq a) => DFA a -> String -> a -> [a]
-adjacent d alphabet p = [head qs | c <- alphabet, let qs = delta d c p, qs /= []] 
+adjacent :: (Show a, Ord a) => DFA a -> String -> a -> [a]
+adjacent d alphabet p = 
+    [head $ toList qs | c <- alphabet, let qs = delta d c p, qs /= empty] 
 
-dfs :: (Show a, Eq a) => DFA a -> String -> [a]
-dfs d alphabet = reverse $ loop s s
+dfs :: (Show a, Ord a) => DFA a -> String -> Set a
+dfs d alphabet = fromList $ reverse $ loop s s
     where 
         loop visited [] = visited 
         loop visited (v : vs) = 
-            let ns = adjacent d alphabet v \\ visited 
+            let ns = adjacent d alphabet v List.\\ visited 
             in loop (ns ++ visited) (ns ++ vs)
-        s = start d
+        s = toList $ start d

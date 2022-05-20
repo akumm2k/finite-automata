@@ -1,6 +1,6 @@
 module Automaton where 
-import Data.List 
-import Data.Set
+import Data.List as List hiding (union)
+import Data.Set as Set
 
 data Move a = 
     Move {from :: a, char :: Char, to :: Set a} 
@@ -42,3 +42,11 @@ differentiate_states a1 a2 =
         a1' = isomorphism a1 (fromList [1 .. l1])
         a2' = isomorphism a2 (fromList [l1 + 1 .. l1 + l2])
     in (l1, l2, a1', a2')
+
+setCat :: Ord a => Set (Set a) -> Set a 
+setCat = Set.foldr union Set.empty 
+
+listSetCat :: Ord a => [Set a] -> [a]
+listSetCat [] = [] 
+listSetCat [a, b] = toList (a `union` b)
+listSetCat (a : bs) = toList a ++ listSetCat bs

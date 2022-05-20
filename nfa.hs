@@ -4,7 +4,7 @@ import Prelude hiding (null)
 import Data.Set as Set   
 import Debug.Trace
 import Automaton
-import Data.List as List hiding (union)
+import Data.List hiding (union)
 {-
 * NFA: 
 (
@@ -44,14 +44,6 @@ deltaN nfa c p =
     let qs = listSetCat [s | m@(Move _ _ s) <- toList $ movesN nfa, 
             char m == c, from m == p]
     in fromList $ listSetCat [epsilon_closure nfa q | q <- qs]
-
-setCat :: Ord a => Set (Set a) -> Set a 
-setCat = Set.foldr union Set.empty 
-
-listSetCat :: Ord a => [Set a] -> [a]
-listSetCat [] = [] 
-listSetCat [a, b] = toList (a `union` b)
-listSetCat (a : bs) = toList a ++ listSetCat bs
 
 {-
 q \in (epsilon_closure q)
