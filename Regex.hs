@@ -1,5 +1,7 @@
 module Regex where 
-    
+
+import Data.Char 
+
 data Reg =  
     Epsilon |
     Literal Char |
@@ -34,8 +36,10 @@ regexp -    term | regexp '|' term
 '|' - union
 -}
 
-is_alpha :: Char -> Bool
-is_alpha = \x -> 'a' <= x && x <= 'z'
+valid_char :: Char -> Bool
+-- valid ascii range: [33, 126]
+valid_char = \x -> '!' <= x && x <= '~' 
+    && x /= '(' && x /= ')'
 
 primary :: String -> (Reg, String)
 primary ('(' : s) = 
@@ -44,7 +48,7 @@ primary ('(' : s) =
         primary_process (re, tail t)
     else error "bad syntax"
 
-primary (c : s) | is_alpha c = (Literal c, s)
+primary (c : s) | valid_char c = (Literal c, s)
 primary s = (Epsilon, s)
 
 primary_process :: (Reg, String) -> (Reg, String)
