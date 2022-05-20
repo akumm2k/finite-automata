@@ -113,11 +113,15 @@ split_part my_dfa [0, 1] [[0, 1], [2]] 2 =
 -}
 split_part :: (Show a, Eq a) => 
     DFA a -> [a] -> [[a]] -> Int -> (Int, [[a]])
+{-
+TODO: pass alphabet instead of recomp
+-}
 split_part dfa part parts parts_len =
     let alphabet = alphabet_of dfa
         new_parts = [(p, ids) | p <- part, 
             let ids = [part_id q | c <- alphabet, 
-                    let q = head $ delta dfa c p]]
+                    let q' = delta dfa c p, q' /= [],
+                    let q = head q']]
         splits = snd <$> reverse_dict new_parts
         added_len = length splits - 1
     in (added_len, splits)
@@ -139,6 +143,7 @@ state_partition :: (Show a, Eq a) =>
     DFA a -> [[a]] -> Int -> Int -> Int -> Int -> (Int, [[a]])
 state_partition d ps ps_len num_states i j 
     | j >= i || ps_len == num_states = (ps_len, ps)
+
 state_partition d ps ps_len num_states i j = 
     let x = [split_part d part ps ps_len | part <- ps]
         ps' = concat $ snd <$> x 
