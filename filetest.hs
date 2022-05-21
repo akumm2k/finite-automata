@@ -25,6 +25,7 @@ accept_str at str
 
 play_am :: (Automaton at, Ord a, Show a, Show (at a)) =>
     at a -> [String] -> String -> IO ()
+-- given an automaton check if the given strings are recognized by it
 play_am am test_strs print_am = do
     let output = unlines $ (accept_str am) <$> test_strs
     case print_am of
@@ -46,9 +47,11 @@ play filename = do
     handle <- openFile filename ReadMode
     contents <- hGetContents handle
     let ls = lines contents
+        -- split the finite state machine info and test_strs
         Just i = elemIndex sep ls 
         ((n : start' : final' : moves'), (_ : test_strs))
-            = List.splitAt i ls 
+            = splitAt i ls 
+
         q = fromList [1 .. read n]
         start = fromList (read <$> words start' :: [Int])
         final = fromList (read <$> words final' :: [Int])
