@@ -101,6 +101,50 @@ q0: 0
 F: [0]
 ```
 
+## Running tests from a file 
+
+`nfa.txt`
+```
+3
+0
+2
+0 a 0
+0 a 1
+0 b 0
+1 b 2
+2 a 0
+2 a 2
+2 b 1
+===
+aaba
+bba
+```
+* The first three lines describe the number of states, starting states, and final states respectively. Then come the transitions of the form `p c qs`, where $\delta$(p, c) = {qs}. For a lambda / epsilon transition, a `/` must be used. For instance, `0 / 1 2` describes a lambda transition from 0 to 1 and 2.
+* `===` is the separator.
+* Then, there are test strings, one per line.
+
+### Sample file-test run 
+
+* `play :: [filename] -> IO ()`
+```
+$ ghci filetest.hs
+...
+> play "tests/n.txt"
+NFA(n) or DFA(d)?
+n
+Print the automaton? y/n
+y
+
+Q: [1,2,3] 
+delta: [(0 - a -> 0),(0 - a -> 1),(0 - b -> 0),(1 - b -> 2),
+(2 - a -> 0),(2 - a -> 2),(2 - b -> 1)] 
+q0: [0] 
+F: [2]
+
+aaba -> accepted
+bba -> rejected
+```
+
 ## Questions Archive
 
 ### Automata 
