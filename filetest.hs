@@ -1,34 +1,60 @@
+import Automaton
+import NFA 
+import DFA 
 import Regular
-import System.IO  
-import Data.List
-import Control.Monad
+import System.IO ( openFile, hGetContents, IOMode(ReadMode) )  
+import Data.List as List (splitAt, elemIndex)
+import Data.Set ( Set, fromList )
 
-playNFA :: [String] -> [String] -> IO ()
-playNFA fsm test_strs = do 
-    let [n, start, final] = fsm 
-        -- q = [1 .. read ]
-    putStr "String"
+readMove :: [String] -> Move Int
+readMove (p' : "\\" : q') =
+    let p = read p' :: Int 
+        q = fromList (read <$> q' :: [Int])
+    in EMove p q
+readMove (p' : c' : q') =
+    let p = read p' 
+        [c] = c' 
+        q = fromList (read <$> q' :: [Int])
+    in (Move p c q)
+readMove _ = error "bad move syntax"
 
-playDFA :: [String] -> [String] -> IO ()
-playDFA fsm test_strs = do
-    putStr "String"
+accept_str :: (Automaton at, Ord a, Show a) => at a -> String -> String
+accept_str at str 
+    | at `accepts` str = str ++ " -> accepted"
+    | otherwise = str ++ " -> rejected"
 
-sep :: [Char]
+play_am :: (Automaton at, Ord a, Show a, Show (at a)) =>
+    at a -> [String] -> String -> IO ()
+play_am am test_strs print_am = do
+    let output = unlines $ (accept_str am) <$> test_strs
+    case print_am of
+        "y" -> putStrLn $ '\n' : show am  ++ "\n\n" ++ output
+        "n" -> putStrLn $ '\n' : output
+        _ -> putStrLn "bad response."
+
+sep :: String
 sep = "==="
 
-main :: IO ()
-main = do 
-    putStrLn "File contains NFA(n) or DFA(d)?"
-    answer <- getLine 
+play :: String -> IO () 
+play filename = do 
+    putStrLn "NFA(n) or DFA(d)?"
+    answer <- getLine
 
-    putStrLn "Enter file name: "
-    filename <- getLine 
+    putStrLn "Print the automaton? y/n"
+    print_am <- getLine
+
     handle <- openFile filename ReadMode
     contents <- hGetContents handle
-    let l = lines contents
-        Just i = elemIndex sep l
-        (fsm, test_strs) = splitAt i l
+    let ls = lines contents
+        Just i = elemIndex sep ls 
+        ((n : start' : final' : moves'), (_ : test_strs))
+            = List.splitAt i ls 
+        q = fromList [1 .. read n]
+        start = fromList (read <$> words start' :: [Int])
+        final = fromList (read <$> words final' :: [Int])
+        moves = fromList ((readMove . words) <$> moves')
+
     case answer of 
-        "n" -> playNFA fsm test_strs
-        "d" -> playDFA fsm test_strs 
-        _ -> putStrLn "bad response" 
+        "n" -> play_am (build_nfa q moves start final) test_strs print_am
+        "d" -> play_am (build_dfa q moves start final) test_strs print_am
+        _ -> putStrLn "bad response"
