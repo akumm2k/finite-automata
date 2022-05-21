@@ -25,7 +25,8 @@ instance (Ord a) => Ord (Move a) where
     (<=) (Move p _ _) (EMove q _) = p <= q
     (<=) (Move p c1 _) (Move q c2 _) = (p, c1) <= (q, c2)
     (<=) (EMove p _) (EMove q _) = p <= q
-    (<=) _ _ = True
+    (<=) (EMove _ p) (Move _ _ q) = p <= q
+    -- (<=) _ _ = True
 
 instance (Show a) => Show (Move a) where 
     show (Move q c ps) = 
