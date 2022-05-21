@@ -10,7 +10,7 @@ import Data.Set as Set
 
 
 reg_to_dfa :: String -> DFA Int
-reg_to_dfa = minimize . to_dfa . reg_to_nfa 
+reg_to_dfa = minimize . nfa_to_dfa . reg_to_nfa 
 
 {-
 Reg to nfa
@@ -79,8 +79,8 @@ all states in the DFA are converted to sigleton sets
 in the NFA. DFAs are internally implemented with singleton sets
 so we can convert them to NFAs directly.
 -}
-to_nfa :: DFA a -> NFA a 
-to_nfa (DFA q delta q0 f) = NFA q delta q0 f 
+dfa_to_nfa :: DFA a -> NFA a 
+dfa_to_nfa (DFA q delta q0 f) = NFA q delta q0 f 
 
 {-
 * NFA to DFA:
@@ -92,8 +92,8 @@ for an NFA (Q, delta, S0, F)
 the following is the equivalent DFA
 (P(Q), delta', {S0}, {q | q intersetion f isn't null for q in P(Q)})
 -}
-to_dfa :: (Ord a, Show a) => NFA a -> DFA (Set a)
-to_dfa n = 
+nfa_to_dfa :: (Ord a, Show a) => NFA a -> DFA (Set a)
+nfa_to_dfa n = 
     DFA (powerSet q) delta' (singleton s0) f'
     where 
         n'@(NFA q delta s0 f) = elim_epsilon n
