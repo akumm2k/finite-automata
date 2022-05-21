@@ -1,5 +1,6 @@
 import Automaton
-import DFA 
+import DFA
+import Regular 
 import Data.Set 
 
 -- test DFA:
@@ -25,6 +26,7 @@ d1 :: DFA Int
 d1 = DFA q1 del1 q01 f1
 
 
+q2 :: Set Int
 q2 = fromList [0, 1, 2, 3]
 
 del2 :: Set (Move Int)
