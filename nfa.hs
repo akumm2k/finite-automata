@@ -43,7 +43,7 @@ deltaN :: (Show a, Ord a) => NFA a -> Char -> a -> Set a
 -- return the transition from p w/ c in nfa
 deltaN nfa c p =
     -- pattern match Move to avoid calling `char` on an
-    -- epsilon move. char :: char :: (Move a Char a) -> Char
+    -- epsilon move. char :: (Move a Char a) -> Char
     let qs = listSetCat [s | m@(Move _ _ s) <- toList $ movesN nfa, 
             char m == c, from m == p]
     in fromList $ listSetCat [epsilon_closure nfa q | q <- qs]
