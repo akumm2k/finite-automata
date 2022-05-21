@@ -44,9 +44,9 @@ build_dfa q delta q0 f =
 is_deterministic :: (Set (Move a), Set a) -> Bool 
 -- return true if the moves have only one sink state
 is_deterministic (ms, q0) = 
-    and [List.null $ tail (toList q) | (Move _ _ q) <- toList ms] 
-    && List.null [1 | (EMove _ _) <- toList ms] 
-    && (List.null $ tail $ toList q0)
+    and [null $ tail (toList q) | (Move _ _ q) <- toList ms] 
+    && null [1 | (EMove _ _) <- toList ms] 
+    && (null $ tail $ toList q0)
 
 deltaD :: Ord a => DFA a -> Char -> a -> Set a
 -- return the transition from p w/ c in dfa
