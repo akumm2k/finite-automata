@@ -1,6 +1,7 @@
 import Automaton
 import NFA 
 import DFA 
+import Regex
 import Regular
 import System.IO ( openFile, hGetContents, IOMode(ReadMode) )  
 import Data.List as List (splitAt, elemIndex)

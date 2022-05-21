@@ -12,7 +12,7 @@
 ## Sample run 
 
 ```
-$ ghci Regular.hs 
+$ ghci filetest.hs 
 GHCi, version 8.10.7: https://www.haskell.org/ghc/  :? for help
 ...
 [1 of 6] Compiling Automaton        ( Automaton.hs, interpreted )
