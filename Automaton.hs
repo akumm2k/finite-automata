@@ -63,3 +63,12 @@ listSetCat :: Ord a => [Set a] -> [a]
 listSetCat [] = [] 
 listSetCat [a, b] = toList (a `union` b)
 listSetCat (a : bs) = toList a ++ listSetCat bs
+
+set_null :: Set a -> Bool
+set_null = Set.null
+
+set_map :: Ord b => (a -> b) -> Set a -> Set b
+set_map = Set.map
+
+empty_set :: Set a
+empty_set = Set.empty

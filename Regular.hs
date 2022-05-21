@@ -3,11 +3,12 @@ module Regular where
 import Automaton
 import DFA 
 import NFA 
-import Regex
-import Queue
-import Data.List as List hiding (union)
-import Data.Set as Set 
-
+import Regex 
+import Queue 
+import Data.List as List ( (\\) )
+import Data.Set as Set
+    ( empty, fromList, intersection, powerSet, singleton,
+      toList, union, Set )
 
 reg_to_dfa :: String -> DFA Int
 reg_to_dfa = minimize . nfa_to_dfa . reg_to_nfa 
@@ -20,7 +21,7 @@ reg_to_nfa :: String -> NFA Int
 reg_to_nfa = reg_to_nfa' . get_reg 
 
 reg_to_nfa' :: Reg -> NFA Int
-reg_to_nfa' Epsilon = NFA z Set.empty z z
+reg_to_nfa' Epsilon = NFA z empty_set z z
     where z = singleton 0
     -- Epsilon = NFA [0] [] [0] [0]
 
@@ -100,7 +101,7 @@ nfa_to_dfa n =
         n'@(NFA q delta s0 f) = elim_epsilon n
         delta' = subset_constr n'
         f' = fromList $ 
-            [q | q <- toList pq, q `intersection` f /= Set.empty]
+            [q | q <- toList pq, q `intersection` f /= empty_set]
 
 {-
 * Subset Construction for nfa n
@@ -130,21 +131,24 @@ subset_constr' queue nfa alphabet visited moves =
             c <- alphabet, let ps =  fromList $ listSetCat 
                                 [p | q <- toList states, 
                                 let p = delta nfa c q, 
-                                p /= Set.empty], 
-            ps /= Set.empty
+                                p /= empty_set], 
+            ps /= empty_set
             ] -- compute new transitions skipping empty ones
             
         new_states = fromList $ listSetCat 
             [ps | Move _ _ ps <- toList moves']
         visited' = states : visited 
         
-        new_queue = List.foldr enqueue queue' 
-            ((toList new_states) List.\\ visited')
+        new_queue = foldr enqueue queue' 
+            ((toList new_states) \\ visited')
     in 
         (subset_constr' new_queue nfa alphabet 
             visited' (moves `union` moves'))
 
 subset_constr :: (Show a, Ord a) => NFA a -> Set (Move (Set a))
 subset_constr n@(NFA q moves q0 f) = 
-    let queue = List.foldr enqueue Queue.empty (powerSet q)
-    in subset_constr' queue n (alphabet_of n) [] Set.empty
+    let queue = foldr enqueue empty_queue (powerSet q)
+    in subset_constr' queue n (alphabet_of n) [] empty_set
+
+empty_queue :: FQueue a
+empty_queue = Queue.empty

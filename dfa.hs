@@ -1,10 +1,9 @@
 module DFA where 
     
-import Debug.Trace
-import Prelude
 import Automaton
 import Data.Set as Set
-import Data.List as List
+    ( difference, empty, fromList, singleton, toList, Set )
+import Data.List as List ( null, (\\), nub, sort )
 {-
 * DFA: 
 (
@@ -170,11 +169,11 @@ minimize d =
     let alphabet = alphabet_of d
         -- remove unreachable states
         reachable = dfs d alphabet
-        unreachable = states d Set.\\ reachable
-        fin = final d Set.\\ unreachable
-        non_final = reachable Set.\\ fin
+        unreachable = states d `difference` reachable
+        fin = final d `difference` unreachable
+        non_final = reachable `difference` fin
         n = length reachable
-        p1 = (fromList [non_final, fin]) Set.\\ (fromList [empty])
+        p1 = (fromList [non_final, fin]) `difference` (fromList [empty])
         -- get equivalent states
         (l, ps) = state_partition d alphabet (toList p1) (length p1) n n 0
         -- build minimized dfa
@@ -210,6 +209,6 @@ dfs d alphabet = fromList $ reverse $ loop s s
     where 
         loop visited [] = visited 
         loop visited (v : vs) = 
-            let ns = adjacent d alphabet v List.\\ visited 
+            let ns = adjacent d alphabet v \\ visited 
             in loop (ns ++ visited) (ns ++ vs)
         s = toList $ start d

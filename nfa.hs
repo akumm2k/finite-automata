@@ -1,10 +1,9 @@
 module NFA where 
-
-import Prelude hiding (null)
-import Data.Set as Set   
-import Debug.Trace
+    
 import Automaton
-import Data.List hiding (union)
+import Data.Set as Set
+    ( difference, fromList, member, singleton, toList, union, Set )   
+import Data.List ( sort )
 {-
 * NFA: 
 (
@@ -57,7 +56,7 @@ epsilon_closure' :: (Show a, Ord a) => NFA a -> Set a -> Set a
 epsilon_closure' n@(NFA q del s0 f) qs = 
     let new_qs = fromList [r | p <- toList qs, 
             (EMove p' enp) <- toList del, p == p', r <- toList enp]
-    in if Set.null (new_qs Set.\\ qs) then qs 
+    in if set_null (new_qs `difference` qs) then qs 
     else epsilon_closure' n (qs `union` new_qs)
 
 epsilon_closure :: (Show a, Ord a) => NFA a -> a -> Set a
@@ -69,11 +68,11 @@ delta_star(q, wa) | a :: Char, w :: String
     = epsilon_closure (delta(p, a) for all p in delta_star(q, w))
 -}
 delta_star' :: (Ord a, Show a) => Set a -> NFA a -> String -> Maybe (Set a)
-delta_star' fs n [] = Just (setCat (Set.map (epsilon_closure n) fs))
+delta_star' fs n [] = Just (setCat (set_map (epsilon_closure n) fs))
 delta_star' qs nfa (c : cs) = 
-    let qs' = setCat (Set.map (epsilon_closure nfa) qs)
-        next = setCat (Set.map (deltaN nfa c) qs')
-    in if Set.null next then Nothing else 
+    let qs' = setCat (set_map (epsilon_closure nfa) qs)
+        next = setCat (set_map (deltaN nfa c) qs')
+    in if set_null next then Nothing else 
         delta_star' next nfa cs
 
 delta_star :: (Ord a, Show a) =>  NFA a -> String -> Maybe (Set a)
@@ -96,14 +95,14 @@ there is a move `q c r`
 -}
 elim_epsilon :: (Show a, Ord a) => NFA a -> NFA a 
 elim_epsilon n@(NFA q ms q0 f) = 
-    let nq0 =  setCat (Set.map (epsilon_closure n) q0)
+    let nq0 =  setCat (set_map (epsilon_closure n) q0)
         nf = [p | q <- toList f, (EMove p qs) <- toList ms, 
             q `member` qs]
         f' = f `union` (fromList nf )
 
         deterministic_moves = [Move p c q' | 
             (Move p c q) <- toList ms, 
-            let q' = setCat (Set.map (epsilon_closure n) q)]
+            let q' = setCat (set_map (epsilon_closure n) q)]
 
         new_moves = [Move p c r | (EMove p qs) <- toList ms, 
             q <- toList qs, (Move q' c r) <- toList ms, q == q'
@@ -121,12 +120,12 @@ isomorphismN n@(NFA q moves s0 f) qs' =
             Nothing -> error ""
             )
         moves' = [(Move hp c hq) | (Move p c q) <- toList moves, 
-            let Just hp = lookup p h, let hq = (Set.map h_each q)]
+            let Just hp = lookup p h, let hq = (set_map h_each q)]
             ++ 
             [(EMove hp hq) | (EMove p q) <- toList moves, 
-            let Just hp = lookup p h, let hq = (Set.map h_each q)]
-        f' = Set.map h_each f 
-        s0' = Set.map h_each s0 
+            let Just hp = lookup p h, let hq = (set_map h_each q)]
+        f' = set_map h_each f 
+        s0' = set_map h_each s0 
     in NFA qs' (fromList moves') s0' f'
     
 {- 
@@ -145,3 +144,4 @@ extMove_to_move movesN = fromList $
         (ExtMove p cs q) <- movesN, cs /= "", c <- cs]
     ++ 
     [EMove p (fromList q) | (ExtMove p "" q) <- movesN]
+    
