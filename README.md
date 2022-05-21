@@ -7,7 +7,7 @@
 - [x] converting from nfa -> dfa
 - [x] converting from regex -> nfa
 - [x] minimizing dfas
-- [ ] add feature to test from files
+- [x] feature to test from files
 
 ## Sample run 
 
