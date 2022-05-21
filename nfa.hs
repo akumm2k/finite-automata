@@ -31,7 +31,7 @@ instance (Show a, Ord a) =>  Show (NFA a) where
     show (NFA q delta s0 f) = 
         "Q: " ++ show (toList q) ++ " \n" ++
         "delta: " ++ show (sort $ (toList delta)) ++ " \n" ++ 
-        "q0: " ++ show (toList s0) ++ " \n" ++
+        "S0: " ++ show (toList s0) ++ " \n" ++
         "F: " ++ show (toList f) 
 
 build_nfa :: Ord a => 
