@@ -94,16 +94,13 @@ the following is the equivalent DFA
 -}
 nfa_to_dfa :: (Ord a, Show a) => NFA a -> DFA (Set a)
 nfa_to_dfa n = 
-    DFA (powerSet q) delta' (singleton s0) f'
+    DFA pq delta' (singleton s0) f'
     where 
+        pq = powerSet q
         n'@(NFA q delta s0 f) = elim_epsilon n
         delta' = subset_constr n'
-        f' = fromList $  
-            ([p' | (Move _ _ p) <- toList delta', 
-            let [p'] = toList p, intersection p' f /= Set.empty]
-            ++ 
-            [q | (Move q _ _) <- toList delta', 
-                intersection q f /= Set.empty])
+        f' = fromList $ 
+            [q | q <- toList pq, q `intersection` f /= Set.empty]
 
 {-
 * Subset Construction for nfa n
