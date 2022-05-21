@@ -21,10 +21,10 @@ instance Show Reg where
 char -      'a' | ... | 'z'
 primary -   epsilon | char | '(' '.' regexp '.' ')'
 
-factor -    primary | factor '.' primary    ~ primary '.' (primary) '*' 
+factor -    primary | factor '.' primary ~ primary '.' (primary) '*' 
             | primary '*' | primary '?'
 
-term -      factor | term '.' factor        ~ factor '.' (factor) '*' 
+term -      factor | term '.' factor     ~ factor '.' (factor) '*' 
 
 regexp -    term | regexp '|' term
 ---
@@ -105,7 +105,7 @@ term_ext (re, s) =
     let (re2, t) = factor s 
     in 
         if s == t 
-            -- str unchanged -> (head s == ')') to be passed to primary
+        -- str unchanged -> (head s == ')') to be passed to primary
             then (re, t) 
         else -- carry on parsing 
             term_ext (Then re re2, t) -- factor.(factor)* 
@@ -134,7 +134,8 @@ get_reg :: String -> Reg
 get_reg s = 
     let (re, str) = regexp s in
     if str == "" then re 
-    else error ("something went wrong. Unconsumed substring: " ++ str)
+    else error 
+        ("something went wrong. Unconsumed substring: " ++ str)
 
 {-
 left_derivative [re :: Reg] s =
@@ -148,7 +149,8 @@ left_derivative Epsilon s = [s]
 left_derivative (Literal c) (d : s) | (c == d) = [s]
 left_derivative (Literal c) s = []
 
-left_derivative (Or a b) s = left_derivative a s ++ left_derivative b s 
+left_derivative (Or a b) s = 
+    left_derivative a s ++ left_derivative b s 
 left_derivative (Then a b) s = 
     [u | t <- left_derivative a s, u <- left_derivative b t] 
 
@@ -188,4 +190,5 @@ test_reg_parse :: [String]
 test_reg_parse = 
     let test_strs = ["(aa)*", "a(aa)*", "*a?", "xy(a?|b*c)cd"]
         test_strs2 = ["a??", "a**", "(a*)*", "?a??", "axy(bc?d*|)g"]
-    in [re ++ " -> " ++ show (get_reg re) | re <- test_strs ++ test_strs2]
+    in [re ++ " -> " ++ show (get_reg re) | 
+        re <- test_strs ++ test_strs2]

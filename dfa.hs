@@ -36,7 +36,8 @@ instance (Show a, Ord a) =>  Show (DFA a) where
         "F: " ++ show (toList f) 
         where [q0'] = toList q0 
 
-build_dfa :: Ord a => Set a -> Set (Move a) -> Set a -> Set a -> DFA a
+build_dfa :: Ord a => Set a -> Set (Move a) 
+    -> Set a -> Set a -> DFA a
 build_dfa q delta q0 f = 
     if is_deterministic (delta, q0) then DFA q delta q0 f
     else error ("Non-deterministic move detected.")
