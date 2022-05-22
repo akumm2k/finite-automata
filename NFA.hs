@@ -87,8 +87,8 @@ deltaN :: (Show a, Ord a) => NFA a -> Char -> a -> Set a
 deltaN nfa c p =
     -- pattern match Move to avoid calling `char` on an
     -- epsilon move. char :: (Move a Char a) -> Char
-    let qs = unions [s | m@(Move p (Just c) s) <- toList $ movesN nfa, 
-            char m == Just c, from m == p]
+    let qs = unions [s | m@(Move p' (Just c') s) <- toList $ movesN nfa, 
+            c' == c,  p' == p]
     in unions [epsilon_closure nfa q | q <- toList qs]
 
 {-
