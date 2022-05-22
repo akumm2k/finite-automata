@@ -1,6 +1,7 @@
 module Automaton where 
-import Data.List as List hiding (union)
+import Data.List as List ( group, intercalate, sort )
 import Data.Set as Set
+    ( Set, empty, fromList, map, null, toList, union, unions )
 
 class Automaton at where 
     states :: at a -> Set a
@@ -37,6 +38,7 @@ instance (Show a) => Show (Move a) where
             ++ show_states ps ++ ")"
 
 rmdups :: Ord a => [a] -> [a]
+-- this is O(n log n). `nub` uses `Eq a`, so requires O(n)
 rmdups = fmap head . group . sort
 
 alphabet_of :: Automaton at => at a -> [Char]
@@ -53,16 +55,6 @@ differentiate_states a1 a2 =
         a1' = isomorphism a1 (fromList [1 .. l1])
         a2' = isomorphism a2 (fromList [l1 + 1 .. l1 + l2])
     in (l1, l2, a1', a2')
-
-setCat :: Ord a => Set (Set a) -> Set a 
--- concat a set of sets into a set
-setCat = Set.foldr union Set.empty 
-
-listSetCat :: Ord a => [Set a] -> [a]
--- concat a list of sets of a into a list of a
-listSetCat [] = [] 
-listSetCat [a, b] = toList (a `union` b)
-listSetCat (a : bs) = toList a ++ listSetCat bs
 
 set_null :: Set a -> Bool
 set_null = Set.null

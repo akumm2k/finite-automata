@@ -2,7 +2,7 @@ module DFA where
     
 import Automaton
 import Data.Set as Set
-    ( difference, empty, fromList, singleton, toList, Set )
+    ( difference, empty, fromList, singleton, toList, Set, unions )
 import Data.List as List ( null, (\\), nub, sort )
 {-
 * DFA: 
@@ -50,9 +50,8 @@ is_deterministic (ms, q0) =
 
 deltaD :: Ord a => DFA a -> Char -> a -> Set a
 -- return the transition from p w/ c in dfa
-deltaD dfa c p =
-    fromList $ listSetCat 
-        [to m | m <- toList $ movesD dfa, char m == c, from m == p]
+deltaD dfa c p = unions
+    [to m | m <- toList $ movesD dfa, char m == c, from m == p]
 
 {-
 delta_star(q, wa) | w :: String, a :: Char 

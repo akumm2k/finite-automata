@@ -2,7 +2,7 @@ module NFA where
     
 import Automaton
 import Data.Set as Set
-    ( difference, fromList, member, singleton, toList, union, Set )   
+    ( difference, fromList, member, singleton, toList, union, Set, unions )   
 import Data.List ( sort )
 {-
 * NFA: 
@@ -43,9 +43,9 @@ deltaN :: (Show a, Ord a) => NFA a -> Char -> a -> Set a
 deltaN nfa c p =
     -- pattern match Move to avoid calling `char` on an
     -- epsilon move. char :: (Move a Char a) -> Char
-    let qs = listSetCat [s | m@(Move _ _ s) <- toList $ movesN nfa, 
+    let qs = unions [s | m@(Move _ _ s) <- toList $ movesN nfa, 
             char m == c, from m == p]
-    in fromList $ listSetCat [epsilon_closure nfa q | q <- qs]
+    in unions [epsilon_closure nfa q | q <- toList qs]
 
 {-
 q \in (epsilon_closure q)
@@ -68,10 +68,10 @@ delta_star(q, wa) | a :: Char, w :: String
     = epsilon_closure (delta(p, a) for all p in delta_star(q, w))
 -}
 delta_star' :: (Ord a, Show a) => Set a -> NFA a -> String -> Maybe (Set a)
-delta_star' fs n [] = Just (setCat (set_map (epsilon_closure n) fs))
+delta_star' fs n [] = Just (unions (set_map (epsilon_closure n) fs))
 delta_star' qs nfa (c : cs) = 
-    let qs' = setCat (set_map (epsilon_closure nfa) qs)
-        next = setCat (set_map (deltaN nfa c) qs')
+    let qs' = unions (set_map (epsilon_closure nfa) qs)
+        next = unions (set_map (deltaN nfa c) qs')
     in if set_null next then Nothing else 
         delta_star' next nfa cs
 
@@ -95,14 +95,14 @@ there is a move `q c r`
 -}
 elim_epsilon :: (Show a, Ord a) => NFA a -> NFA a 
 elim_epsilon n@(NFA q ms q0 f) = 
-    let nq0 =  setCat (set_map (epsilon_closure n) q0)
+    let nq0 =  unions (set_map (epsilon_closure n) q0)
         nf = [p | q <- toList f, (EMove p qs) <- toList ms, 
             q `member` qs]
         f' = f `union` (fromList nf )
 
         deterministic_moves = [Move p c q' | 
             (Move p c q) <- toList ms, 
-            let q' = setCat (set_map (epsilon_closure n) q)]
+            let q' = unions (set_map (epsilon_closure n) q)]
 
         new_moves = [Move p c r | (EMove p qs) <- toList ms, 
             q <- toList qs, (Move q' c r) <- toList ms, q == q'

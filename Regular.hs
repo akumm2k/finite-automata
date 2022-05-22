@@ -8,7 +8,7 @@ import Queue
 import Data.List as List ( (\\) )
 import Data.Set as Set
     ( empty, fromList, intersection, powerSet, singleton,
-      toList, union, Set )
+      toList, union, Set, unions )
 
 reg_to_dfa :: String -> DFA Int
 reg_to_dfa = minimize . nfa_to_dfa . reg_to_nfa 
@@ -128,14 +128,14 @@ subset_constr' queue nfa alphabet visited moves =
 
         moves' = fromList 
             [Move states c (singleton ps) | 
-            c <- alphabet, let ps =  fromList $ listSetCat 
+            c <- alphabet, let ps = unions 
                                 [p | q <- toList states, 
                                 let p = delta nfa c q, 
                                 p /= empty_set], 
             ps /= empty_set
             ] -- compute new transitions skipping empty ones
             
-        new_states = fromList $ listSetCat 
+        new_states = unions 
             [ps | Move _ _ ps <- toList moves']
         visited' = states : visited 
         
