@@ -58,3 +58,17 @@ del3 = fromList [
 q03 = 0
 
 f3 = fromList [1, 2]
+
+-- minimization bug for (abb*|baa*)
+q4 = fromList [0, 1, 2, 3, 4]
+del4 = fromList [
+    DMove 0 'a' 1,
+    DMove 0 'b' 2,
+    DMove 1 'b' 3,
+    DMove 2 'a' 4,
+    DMove 4 'a' 4,
+    DMove 3 'b' 3
+    ]
+q04 = 0
+
+f4 = fromList [3, 4]
