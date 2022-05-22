@@ -92,6 +92,10 @@ dfa_to_nfa (DFA q delta q0 f) = NFA q delta q0 f
 for an NFA (Q, delta, S0, F)
 the following is the equivalent DFA
 (P(Q), delta', {S0}, {q | q intersetion f isn't null for q in P(Q)})
+TODO: new approach
+    start from the new starting state,
+    do a dfs to find reachable states, using a 
+    modified ajacent function
 -}
 nfa_to_dfa :: (Ord a, Show a) => NFA a -> DFA (Set a)
 nfa_to_dfa n = 

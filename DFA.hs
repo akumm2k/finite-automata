@@ -1,7 +1,6 @@
 module DFA where 
     
 import Automaton
-    ( alphabet_of, Automaton(..), Move(Move, EMove, char, from, to) )
 import Data.Set as Set
     ( difference, empty, fromList, singleton, toList, Set, unions )
 import Data.List as List ( null, (\\), nub, sort )
@@ -172,7 +171,7 @@ minimize :: (Ord a, Show a) => DFA a -> DFA Int
 minimize d = 
     let alphabet = alphabet_of d
         -- remove unreachable states
-        reachable = dfs d alphabet
+        reachable = dfs d adjacentD alphabet
         unreachable = states d `difference` reachable
         fin = final d `difference` unreachable
         non_final = reachable `difference` fin
@@ -202,17 +201,7 @@ get_id :: Ord a => [(Set a, Int)] -> a -> Int
 get_id p_to_id x = 
     head [id | (part, id) <- p_to_id, x `elem` part]
 
-adjacent :: (Show a, Ord a) => DFA a -> String -> a -> [a]
+adjacentD :: (Show a, Ord a) => DFA a -> String -> a -> [a]
 -- return a list of adjacent states of p in DFA d 
-adjacent d alphabet p = 
+adjacentD d alphabet p = 
     [head $ toList qs | c <- alphabet, let qs = delta d c p, qs /= empty] 
-
-dfs :: (Show a, Ord a) => DFA a -> String -> Set a
--- find all reachable states in DFA d
-dfs d alphabet = fromList $ reverse $ loop s s
-    where 
-        loop visited [] = visited 
-        loop visited (v : vs) = 
-            let ns = adjacent d alphabet v \\ visited 
-            in loop (ns ++ visited) (ns ++ vs)
-        s = toList $ start d

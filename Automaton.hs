@@ -64,3 +64,14 @@ set_map = Set.map
 
 empty_set :: Set a
 empty_set = Set.empty
+
+dfs :: (Show a, Ord a, Automaton at) => 
+    at a -> (at a -> String -> a -> [a]) -> String -> Set a
+-- find all reachable states in DFA d
+dfs d adjacent alphabet = fromList $ reverse $ loop s s
+    where 
+        loop visited [] = visited 
+        loop visited (v : vs) = 
+            let ns = adjacent d alphabet v \\ visited 
+            in loop (ns ++ visited) (ns ++ vs)
+        s = toList $ start d
