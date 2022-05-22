@@ -151,11 +151,14 @@ at each itr,
         for each state
             record its transition to other partition 
         split the part based on the transitions 
-potential optimization: may finish early if the partitions don't change
+potential optimization: may finish early if the partitions 
+    don't change
 -}
 state_partition :: (Show a, Ord a) => 
-    DFA a -> String -> [Set a] -> Int -> Int -> Int -> Int -> (Int, [Set a])
--- return a list of equivalent states using the table filling algorithm
+    DFA a -> String -> [Set a] -> Int -> Int -> Int -> Int 
+    -> (Int, [Set a])
+-- return a list of equivalent states using the table filling 
+--      algorithm
 -- described above
 state_partition d _ ps ps_len num_states i j 
     | j >= i || ps_len == num_states = (ps_len, ps)
@@ -172,21 +175,27 @@ remove unreachable states
 perform table filling algorithm to find equivalent states
     first equivalence partition: [[non-final states], [final states]]
     at most `size_of(states)` iterations
-        potential optimization: stop when the partitions are not split anymore
+        potential optimization: 
+            stop when the partitions are not split anymore
 update transitions based on the equivalent states
 -}
 minimize :: (Ord a, Show a) => DFA a -> DFA Int
 minimize d = 
     let alphabet = alphabet_of d
+
         -- remove unreachable states
         reachable = dfs d adjacentD alphabet
         unreachable = states d `difference` reachable
         fin = final d `difference` unreachable
         non_final = reachable `difference` fin
         n = length reachable
-        p1 = (fromList [non_final, fin]) `difference` (fromList [empty])
+        p1 = (fromList [non_final, fin]) `difference` 
+            (fromList [empty])
+
         -- get equivalent states
-        (l, ps) = state_partition d alphabet (toList p1) (length p1) n n 0
+        (l, ps) = state_partition d alphabet 
+            (toList p1) (length p1) n n 0
+
         -- build minimized dfa
         q = [0 .. l - 1] 
         p_to_id = zip ps q
@@ -195,7 +204,8 @@ minimize d =
         q0 = fromList [get_id p_to_id $ head (toList $ start d)]
     in DFA (fromList q) delta q0 f 
 
-update_delta :: Ord a => DFA a -> Set a -> [(Set a, Int)] -> Set (DMove Int)
+update_delta :: Ord a => 
+    DFA a -> Set a -> [(Set a, Int)] -> Set (DMove Int)
 update_delta d@(DFA q' del' q0' f') reachable p_to_id = 
     fromList [DMove a' c b' | (DMove a c b) <- toList $ movesD d,
         a `elem` reachable,
@@ -211,4 +221,5 @@ get_id p_to_id x =
 adjacentD :: (Show a, Ord a) => DFA a -> String -> a -> [a]
 -- return a list of adjacent states of p in DFA d 
 adjacentD d alphabet p = 
-    [head $ toList qs | c <- alphabet, let qs = delta d c p, qs /= empty] 
+    [head $ toList qs | 
+    c <- alphabet, let qs = delta d c p, qs /= empty] 

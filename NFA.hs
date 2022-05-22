@@ -2,8 +2,10 @@ module NFA where
     
 import Automaton
 import Data.Set as Set
-    ( difference, fromList, member, singleton, toList, union, Set, unions )   
+    ( difference, fromList, member, singleton, 
+    toList, union, Set, unions )   
 import Data.List ( sort )
+import Data.Maybe ( fromJust )
 {-
 * NFA: 
 (
@@ -87,7 +89,8 @@ epsilon_closure n q' =
 delta_star(q, wa) | a :: Char, w :: String
     = epsilon_closure (delta(p, a) for all p in delta_star(q, w))
 -}
-delta_star' :: (Ord a, Show a) => Set a -> NFA a -> String -> Maybe (Set a)
+delta_star' :: (Ord a, Show a) => 
+    Set a -> NFA a -> String -> Maybe (Set a)
 delta_star' fs n [] = Just (unions (set_map (epsilon_closure n) fs))
 delta_star' qs nfa (c : cs) = 
     let qs' = unions (set_map (epsilon_closure nfa) qs)
@@ -137,11 +140,9 @@ isomorphismN :: (Show a, Ord a, Show b, Ord b) =>
 -- return an isomorphic NFA with states(NFA) renamed to qs'
 isomorphismN n@(NFA q moves s0 f) qs' =
     let qs = states n 
-        h = zip (toList qs) (toList qs')
-        h_each = (\x -> case lookup x h of 
-            Just x' -> x' 
-            Nothing -> error ""
-            )
+        h = zip (toList qs) (toList qs') -- new labels
+        h_each = \x -> fromJust $ lookup x h
+
         moves' = [(Move hp c hq) | (Move p c q) <- toList moves, 
             let Just hp = lookup p h, let hq = (set_map h_each q)]
             ++ 
@@ -149,6 +150,7 @@ isomorphismN n@(NFA q moves s0 f) qs' =
             let Just hp = lookup p h, let hq = (set_map h_each q)]
         f' = set_map h_each f 
         s0' = set_map h_each s0 
+
     in NFA qs' (fromList moves') s0' f'
     
 {- 
