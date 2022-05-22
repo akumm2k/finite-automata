@@ -7,17 +7,22 @@ import System.IO ( openFile, hGetContents, IOMode(ReadMode) )
 import Data.List as List (splitAt, elemIndex)
 import Data.Set ( Set, fromList )
 
-readMove :: [String] -> Move Int
-readMove (p' : "\\" : q') =
+readNMove :: [String] -> Move Int
+readNMove (p' : "\\" : q') =
     let p = read p' :: Int 
         q = fromList (read <$> q' :: [Int])
     in EMove p q
-readMove (p' : c' : q') =
+readNMove (p' : c' : q') =
     let p = read p' 
         [c] = c' 
         q = fromList (read <$> q' :: [Int])
     in (Move p c q)
-readMove _ = error "bad move syntax"
+readNMove _ = error "bad move syntax"
+
+readDMove :: [String] -> DMove Int 
+readDMove (p : [c] : q : []) = 
+    DMove (read p) c (read q)
+readDMove _ = error "bad move"
 
 accept_str :: (Automaton at, Ord a, Show a) => at a -> String -> String
 accept_str at str 
@@ -56,9 +61,13 @@ play filename = do
         q = fromList [1 .. read n]
         start = fromList (read <$> words start' :: [Int])
         final = fromList (read <$> words final' :: [Int])
-        moves = fromList ((readMove . words) <$> moves')
+        -- moves = fromList ((readMove . words) <$> moves')
 
     case answer of 
-        "n" -> play_am (build_nfa q moves start final) test_strs print_am
-        "d" -> play_am (build_dfa q moves start final) test_strs print_am
+        "n" -> let moves = fromList ((readNMove . words) <$> moves')
+            in play_am (build_nfa q moves start final) 
+            test_strs print_am
+        "d" -> let moves = fromList ((readDMove . words) <$> moves')
+            in play_am (build_dfa q moves start final) 
+            test_strs print_am
         _ -> putStrLn "bad response"
