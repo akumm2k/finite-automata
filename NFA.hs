@@ -21,15 +21,21 @@ data NFA a =
         startN :: Set a, finalN :: Set a}
 
 data Move a = 
-    Move {from :: a, char :: Char, to :: Set a} 
-    | EMove {efrom :: a, eto :: Set a}
+    Move {from :: a, char :: Maybe Char, to :: Set a} 
     deriving (Eq)
 
+emove :: a -> Set a -> Move a
+emove a b = Move a Nothing b
+
+nmove :: a -> Char -> Set a -> Move a 
+nmove a c b = Move a (Just c) b
+
 instance (Ord a) => Ord (Move a) where 
-    (<=) (Move p _ _) (EMove q _) = p <= q
-    (<=) (Move p c1 _) (Move q c2 _) = (p, c1) <= (q, c2)
-    (<=) (EMove p _) (EMove q _) = p <= q
-    (<=) (EMove _ p) (Move _ _ q) = p <= q
+    (<=) (Move p (Just c1) p') (Move q (Just c2) q') 
+        = (p, c1, p') <= (q, c2, q')
+    (<=) (Move p Nothing p') (Move q Nothing q') = (p, p') <= (q, q')
+    (<=) (Move p Nothing p') (Move q (Just _) q') = (p, p') <= (q, q')
+    (<=) (Move p _ p') (Move q _ q') = (p, p') <= (q, q')
 
 instance (Show a, Ord a) =>  Show (NFA a) where 
     show (NFA q delta s0 f) = 
@@ -39,10 +45,10 @@ instance (Show a, Ord a) =>  Show (NFA a) where
         "F: " ++ show (toList f) 
 
 instance (Show a) => Show (Move a) where 
-    show (Move q c ps) = 
+    show (Move q (Just c) ps) = 
         "(" ++ show q ++ " - " ++ [c] ++ " -> " 
             ++ show_states ps ++ ")"
-    show (EMove q ps) = 
+    show (Move q Nothing ps) = 
         "(" ++ show q ++ " - " ++ "\\" ++ " -> " 
             ++ show_states ps ++ ")"
 
@@ -81,8 +87,8 @@ deltaN :: (Show a, Ord a) => NFA a -> Char -> a -> Set a
 deltaN nfa c p =
     -- pattern match Move to avoid calling `char` on an
     -- epsilon move. char :: (Move a Char a) -> Char
-    let qs = unions [s | m@(Move _ _ s) <- toList $ movesN nfa, 
-            char m == c, from m == p]
+    let qs = unions [s | m@(Move p (Just c) s) <- toList $ movesN nfa, 
+            char m == Just c, from m == p]
     in unions [epsilon_closure nfa q | q <- toList qs]
 
 {-
@@ -93,7 +99,8 @@ if p \in (epsilon_closure q) and EMove p r
 epsilon_closure' :: (Show a, Ord a) => NFA a -> Set a -> Set a
 epsilon_closure' n@(NFA q del s0 f) qs = 
     let new_qs = fromList [r | p <- toList qs, 
-            (EMove p' enp) <- toList del, p == p', r <- toList enp]
+            (Move p' Nothing enp) <- toList del, 
+                p == p', r <- toList enp]
     in if set_null (new_qs `difference` qs) then qs 
     else epsilon_closure' n (qs `union` new_qs)
 
@@ -109,7 +116,8 @@ acceptsN nfa s =
         Nothing -> False
 
 alphabet_of_nfa :: NFA a -> [Char]
-alphabet_of_nfa d = rmdups $ [c | (Move _ c _) <- toList $ movesN d]
+alphabet_of_nfa d = rmdups $ 
+    [c | (Move _ (Just c) _) <- toList $ movesN d]
 
 {-
 let `p \ q` represent an epsilon transition from p to q
@@ -122,7 +130,7 @@ there is a move `q c r`
 elim_epsilon :: (Show a, Ord a) => NFA a -> NFA a 
 elim_epsilon n@(NFA q ms q0 f) = 
     let nq0 =  unions (set_map (epsilon_closure n) q0)
-        nf = [p | q <- toList f, (EMove p qs) <- toList ms, 
+        nf = [p | q <- toList f, (Move p Nothing qs) <- toList ms, 
             q `member` qs]
         f' = f `union` (fromList nf )
 
@@ -130,7 +138,7 @@ elim_epsilon n@(NFA q ms q0 f) =
             (Move p c q) <- toList ms, 
             let q' = unions (set_map (epsilon_closure n) q)]
 
-        new_moves = [Move p c r | (EMove p qs) <- toList ms, 
+        new_moves = [Move p c r | (Move p Nothing qs) <- toList ms, 
             q <- toList qs, (Move q' c r) <- toList ms, q == q'
             ]
     in NFA q (fromList $ deterministic_moves ++ new_moves) nq0 f'
@@ -146,7 +154,7 @@ isomorphismN n@(NFA q moves s0 f) qs' =
         moves' = [(Move hp c hq) | (Move p c q) <- toList moves, 
             let Just hp = lookup p h, let hq = (set_map h_each q)]
             ++ 
-            [(EMove hp hq) | (EMove p q) <- toList moves, 
+            [emove hp hq | (Move p Nothing q) <- toList moves, 
             let Just hp = lookup p h, let hq = (set_map h_each q)]
         f' = set_map h_each f 
         s0' = set_map h_each s0 

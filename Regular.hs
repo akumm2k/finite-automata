@@ -28,22 +28,22 @@ reg_to_nfa' Epsilon = NFA z empty_set z z
 reg_to_nfa' (Literal c) = NFA q ms (singleton 0) (singleton 1)
     where 
         q = (fromList [0, 1])
-        ms = singleton (Move 0 c (singleton 1))
+        ms = singleton (nmove 0 c (singleton 1))
     -- Literal c = NFA [0, 1] [0 - c -> 1] [1]
 
 reg_to_nfa' (Or r1 r2) = 
     --  Or r1 r2: new start -\-> [start n1, start n2]
     let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
-        emove = singleton $ EMove 0 (start n1' `union` start n2')
+        eps_move = singleton $ emove 0 (start n1' `union` start n2')
     in (NFA (fromList [0 .. l1 + l2])
-        (emove `union` (movesN n1' `union` movesN n2')) 
+        (eps_move `union` (movesN n1' `union` movesN n2')) 
         (singleton 0) (final n1' `union` final n2'))
 
 reg_to_nfa' (Then r1 r2) = 
     -- Then r1 r2: final n1 -\-> start n2
     let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
         emoves = fromList 
-            [EMove en1 (start n2') | en1 <- toList $ final n1']
+            [emove en1 (start n2') | en1 <- toList $ final n1']
     in (NFA (fromList [1 .. l1 + l2]) 
         (emoves `union` movesN n1' `union` movesN n2')
         (start n1') (final n2'))
@@ -53,8 +53,8 @@ reg_to_nfa' (Opt r) =
     let n = reg_to_nfa' r 
         l = length $ states n
         n' = isomorphism n (fromList [1 .. l])
-        emove = singleton $ EMove 0 (start n')
-    in NFA (fromList [0 .. l]) (emove `union` movesN n') 
+        eps_move = singleton $ emove 0 (start n')
+    in NFA (fromList [0 .. l]) (eps_move `union` movesN n') 
         (singleton 0) (singleton 0 `union` final n')
 
 reg_to_nfa' (Star r) = 
@@ -62,8 +62,8 @@ reg_to_nfa' (Star r) =
     let n = reg_to_nfa' r 
         l = length $ states n
         n' = isomorphism n (fromList [1 .. l])
-        emoves = fromList ([EMove 0 (start n' `union` final n')] 
-            ++ [EMove f (singleton 0) | f <- toList $ final n'])
+        emoves = fromList ([emove 0 (start n' `union` final n')] 
+            ++ [emove f (singleton 0) | f <- toList $ final n'])
     in NFA (fromList [0 .. l]) 
         (emoves `union` movesN n') (singleton 0) (final n')
 
@@ -84,7 +84,7 @@ dfa_to_nfa :: (Ord a) => DFA a -> NFA a
 dfa_to_nfa (DFA q delta q0 f) = NFA q delta' q0 f 
     where
         delta' = fromList
-            [Move p c (singleton q) | (DMove p c q) <- toList delta]
+            [nmove p c (singleton q) | (DMove p c q) <- toList delta]
     
 
 {-
@@ -122,7 +122,8 @@ Build new transitions
                 skip all empty state transitions
             enqueue new states created
 -}
-subset_constr :: (Show a, Ord a) => NFA a -> (Set (Set a), Set (DMove (Set a)))
+subset_constr :: (Show a, Ord a) => 
+    NFA a -> (Set (Set a), Set (DMove (Set a)))
 subset_constr n@(NFA q moves s0 f) = 
     let queue = enqueue s0 empty_queue 
     in subset_constr' queue n (alphabet_of n) (singleton s0)  empty_set
