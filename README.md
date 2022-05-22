@@ -125,7 +125,7 @@ bba
 
 ### Sample file-test run 
 
-* `play :: [filename] -> IO ()`
+* `play` takes a filename as an argument.
 ```
 $ ghci filetest.hs
 ...
