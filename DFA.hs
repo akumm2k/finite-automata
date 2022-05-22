@@ -1,6 +1,7 @@
 module DFA where 
     
 import Automaton
+    ( alphabet_of, Automaton(..), Move(Move, EMove, char, from, to) )
 import Data.Set as Set
     ( difference, empty, fromList, singleton, toList, Set, unions )
 import Data.List as List ( null, (\\), nub, sort )
@@ -122,15 +123,16 @@ split_part :: (Show a, Ord a) =>
 split_part dfa part parts parts_len alphabet =
     let new_parts = [(p, ids) | p <- toList part, 
             let ids = [part_id q | c <- alphabet, 
-                    let q' = delta dfa c p, q' /= empty,
-                    let q = head $ toList q']]
+                    let q = delta dfa c p]]
         splits =  snd <$> reverse_dict new_parts
         added_len = length splits - 1
     in (added_len, splits)
     where 
         part_id q = 
+            if null q then -1 else
+            let q' = head $ toList q in
             head [i | i <- [0 .. (parts_len - 1)], 
-                q `elem` (parts !! i)]
+                q' `elem` (parts !! i)]
 
 {-
 * Table filling algorithm to find equivalent states
@@ -153,7 +155,8 @@ state_partition d alphabet ps ps_len num_states i j =
     let x = [split_part d part ps ps_len alphabet | part <- ps]
         ps' = concat $ snd <$> x 
         added_len = sum $ fst <$> x
-    in state_partition d alphabet ps' (ps_len + added_len) num_states i (j + 1)
+    in (state_partition d alphabet ps' (ps_len + added_len) 
+        num_states i (j + 1))
 
 {-
 remove unreachable states

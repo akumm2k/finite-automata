@@ -47,3 +47,14 @@ f2 = fromList [0, 2]
 d2 :: DFA Int
 d2 = DFA q2 del2 q02 f2
 
+
+q3 = fromList [0, 1, 2]
+del3 = fromList [
+    Move 0 'a' (singleton 1),
+    Move 0 'b' (singleton 2),
+    Move 1 'b' (singleton 1),
+    Move 2 'a' (singleton 2)
+    ]
+q03 = (singleton 0)
+
+f3 = fromList [1, 2]
