@@ -18,7 +18,7 @@ show_states :: Show a => Set a -> String
 show_states qs = intercalate ", " (show <$> (toList qs))
 
 rmdups :: Ord a => [a] -> [a]
--- this is O(n log n). `nub` uses `Eq a`, so requires O(n)
+-- this is O(n log n). `nub` uses `Eq a`, so requires O(n ^ 2)
 rmdups = fmap head . group . sort
 
 differentiate_states :: 

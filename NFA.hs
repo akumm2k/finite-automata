@@ -16,25 +16,9 @@ import Data.Maybe ( fromJust )
 )
 -}
 
-instance Automaton NFA where
-    states = statesN
-    start = startN 
-    final = finalN 
-    delta = deltaN
-    accepts = acceptsN
-    isomorphism = isomorphismN
-    alphabet_of = alphabet_of_nfa
-
 data NFA a = 
     NFA {statesN :: Set a, movesN :: Set (Move a), 
         startN :: Set a, finalN :: Set a}
-
-instance (Show a, Ord a) =>  Show (NFA a) where 
-    show (NFA q delta s0 f) = 
-        "Q: " ++ show (toList q) ++ " \n" ++
-        "delta: " ++ show (sort $ (toList delta)) ++ " \n" ++ 
-        "S0: " ++ show (toList s0) ++ " \n" ++
-        "F: " ++ show (toList f) 
 
 data Move a = 
     Move {from :: a, char :: Char, to :: Set a} 
@@ -46,7 +30,13 @@ instance (Ord a) => Ord (Move a) where
     (<=) (Move p c1 _) (Move q c2 _) = (p, c1) <= (q, c2)
     (<=) (EMove p _) (EMove q _) = p <= q
     (<=) (EMove _ p) (Move _ _ q) = p <= q
-    -- (<=) _ _ = True
+
+instance (Show a, Ord a) =>  Show (NFA a) where 
+    show (NFA q delta s0 f) = 
+        "Q: " ++ show (toList q) ++ " \n" ++
+        "delta: " ++ show (sort $ (toList delta)) ++ " \n" ++ 
+        "S0: " ++ show (toList s0) ++ " \n" ++
+        "F: " ++ show (toList f) 
 
 instance (Show a) => Show (Move a) where 
     show (Move q c ps) = 
@@ -56,9 +46,35 @@ instance (Show a) => Show (Move a) where
         "(" ++ show q ++ " - " ++ "\\" ++ " -> " 
             ++ show_states ps ++ ")"
 
+instance Automaton NFA where
+    states = statesN
+    start = startN 
+    final = finalN 
+    delta = deltaN
+    accepts = acceptsN
+    isomorphism = isomorphismN
+    alphabet_of = alphabet_of_nfa
+
 build_nfa :: Ord a => 
     Set a -> Set (Move a) -> Set a -> Set a -> NFA a
 build_nfa q delta s0 f = NFA q delta s0 f
+
+{-
+delta_star(q, wa) | a :: Char, w :: String
+    = epsilon_closure (delta(p, a) for all p in delta_star(q, w))
+-}
+
+delta_star :: (Ord a, Show a) =>  NFA a -> String -> Maybe (Set a)
+delta_star nfa = delta_star' (startN nfa) nfa
+
+delta_star' :: (Ord a, Show a) => 
+    Set a -> NFA a -> String -> Maybe (Set a)
+delta_star' fs n [] = Just (unions (set_map (epsilon_closure n) fs))
+delta_star' qs nfa (c : cs) = 
+    let qs' = unions (set_map (epsilon_closure nfa) qs)
+        next = unions (set_map (deltaN nfa c) qs')
+    in if set_null next then Nothing else 
+        delta_star' next nfa cs
 
 deltaN :: (Show a, Ord a) => NFA a -> Char -> a -> Set a
 -- return the transition from p w/ c in nfa
@@ -84,22 +100,6 @@ epsilon_closure' n@(NFA q del s0 f) qs =
 epsilon_closure :: (Show a, Ord a) => NFA a -> a -> Set a
 epsilon_closure n q' = 
     epsilon_closure' n (singleton q')
-
-{-
-delta_star(q, wa) | a :: Char, w :: String
-    = epsilon_closure (delta(p, a) for all p in delta_star(q, w))
--}
-delta_star' :: (Ord a, Show a) => 
-    Set a -> NFA a -> String -> Maybe (Set a)
-delta_star' fs n [] = Just (unions (set_map (epsilon_closure n) fs))
-delta_star' qs nfa (c : cs) = 
-    let qs' = unions (set_map (epsilon_closure nfa) qs)
-        next = unions (set_map (deltaN nfa c) qs')
-    in if set_null next then Nothing else 
-        delta_star' next nfa cs
-
-delta_star :: (Ord a, Show a) =>  NFA a -> String -> Maybe (Set a)
-delta_star nfa = delta_star' (startN nfa) nfa
 
 acceptsN :: (Ord a, Show a) => NFA a -> String -> Bool 
 acceptsN nfa s = 
@@ -152,21 +152,3 @@ isomorphismN n@(NFA q moves s0 f) qs' =
         s0' = set_map h_each s0 
 
     in NFA qs' (fromList moves') s0' f'
-    
-{- 
-ExtendedMove NOT by words, but by multiple symbols 
-transitioning to the same state
-
-ExtMove 0 "+-" [1, 2] =
-    [Move 0 '+' [1, 2], Move '-' [1, 2]]
--}
-data ExtMove a = ExtMove a String [a]
-
--- split an extended move into a non deterministive moves
-extMove_to_move :: Ord a => [ExtMove a] -> Set (Move a)
-extMove_to_move movesN = fromList $
-    [Move p c (fromList q) | 
-        (ExtMove p cs q) <- movesN, cs /= "", c <- cs]
-    ++ 
-    [EMove p (fromList q) | (ExtMove p "" q) <- movesN]
-    

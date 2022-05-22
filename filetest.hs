@@ -7,41 +7,6 @@ import System.IO ( openFile, hGetContents, IOMode(ReadMode) )
 import Data.List as List (splitAt, elemIndex)
 import Data.Set ( Set, fromList )
 
-readNMove :: [String] -> Move Int
-readNMove (p' : "\\" : q') =
-    let p = read p' :: Int 
-        q = fromList (read <$> q' :: [Int])
-    in EMove p q
-readNMove (p' : c' : q') =
-    let p = read p' 
-        [c] = c' 
-        q = fromList (read <$> q' :: [Int])
-    in (Move p c q)
-readNMove _ = error "bad move syntax"
-
-readDMove :: [String] -> DMove Int 
-readDMove (p : [c] : q : []) = 
-    DMove (read p) c (read q)
-readDMove _ = error "bad move"
-
-accept_str :: (Automaton at, Ord a, Show a) => at a -> String -> String
-accept_str at str 
-    | at `accepts` str = str ++ " -> accepted"
-    | otherwise = str ++ " -> rejected"
-
-play_am :: (Automaton at, Ord a, Show a, Show (at a)) =>
-    at a -> [String] -> String -> IO ()
--- given an automaton check if the given strings are recognized by it
-play_am am test_strs print_am = do
-    let output = unlines $ (accept_str am) <$> test_strs
-    case print_am of
-        "y" -> putStrLn $ '\n' : show am  ++ "\n\n" ++ output
-        "n" -> putStrLn $ '\n' : output
-        _ -> putStrLn "bad response."
-
-sep :: String
-sep = "==="
-
 play :: String -> IO () 
 play filename = do 
     putStrLn "NFA(n) or DFA(d)?"
@@ -71,3 +36,38 @@ play filename = do
             in play_am (build_dfa q moves start final) 
             test_strs print_am
         _ -> putStrLn "bad response"
+
+sep :: String
+sep = "==="
+
+readNMove :: [String] -> Move Int
+readNMove (p' : "\\" : q') =
+    let p = read p' :: Int 
+        q = fromList (read <$> q' :: [Int])
+    in EMove p q
+readNMove (p' : c' : q') =
+    let p = read p' 
+        [c] = c' 
+        q = fromList (read <$> q' :: [Int])
+    in (Move p c q)
+readNMove _ = error "bad move syntax"
+
+readDMove :: [String] -> DMove Int 
+readDMove (p : [c] : q : []) = 
+    DMove (read p) c (read q)
+readDMove _ = error "bad move"
+
+play_am :: (Automaton at, Ord a, Show a, Show (at a)) =>
+    at a -> [String] -> String -> IO ()
+-- given an automaton check if the given strings are recognized by it
+play_am am test_strs print_am = do
+    let output = unlines $ (accept_str am) <$> test_strs
+    case print_am of
+        "y" -> putStrLn $ '\n' : show am  ++ "\n\n" ++ output
+        "n" -> putStrLn $ '\n' : output
+        _ -> putStrLn "bad response."
+
+accept_str :: (Automaton at, Ord a, Show a) => at a -> String -> String
+accept_str at str 
+    | at `accepts` str = str ++ " -> accepted"
+    | otherwise = str ++ " -> rejected"

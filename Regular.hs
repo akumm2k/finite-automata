@@ -122,7 +122,13 @@ Build new transitions
             from each state in s
                 skip all empty state transitions
             enqueue new states created
+-}
+subset_constr :: (Show a, Ord a) => NFA a -> Set (DMove (Set a))
+subset_constr n@(NFA q moves q0 f) = 
+    let queue = foldr enqueue empty_queue (powerSet q)
+    in subset_constr' queue n (alphabet_of n) empty_set  empty_set
 
+{-
 subset_constr' :: queue nfa alphabet states visited_states 
     constructed_moves_so_far
 -}
@@ -152,11 +158,6 @@ subset_constr' queue nfa alphabet visited moves =
     in 
         (subset_constr' new_queue nfa alphabet 
             visited' (moves `union` moves'))
-
-subset_constr :: (Show a, Ord a) => NFA a -> Set (DMove (Set a))
-subset_constr n@(NFA q moves q0 f) = 
-    let queue = foldr enqueue empty_queue (powerSet q)
-    in subset_constr' queue n (alphabet_of n) empty_set  empty_set
 
 empty_queue :: FQueue a
 empty_queue = Queue.empty

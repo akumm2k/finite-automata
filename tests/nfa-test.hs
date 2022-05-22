@@ -2,11 +2,29 @@ import Automaton
 import NFA
 import Regular
 import Data.Set
+
+{- 
+ExtendedMove NOT by words, but by multiple symbols 
+transitioning to the same state
+
+ExtMove 0 "+-" [1, 2] =
+    [Move 0 '+' [1, 2], Move '-' [1, 2]]
+-}
+data ExtMove a = ExtMove a String [a]
+
+-- split an extended move into a non deterministive moves
+extMove_to_move :: Ord a => [ExtMove a] -> Set (Move a)
+extMove_to_move movesN = fromList $
+    [Move p c (fromList q) | 
+        (ExtMove p cs q) <- movesN, cs /= "", c <- cs]
+    ++ 
+    [EMove p (fromList q) | (ExtMove p "" q) <- movesN]
+    
+
 {-
 Test NFA:
 accepts `[+-]?(([1-9]+\.[1-9]*)|([1-9]*\.[1-9]+))`
 -}
-
 
 my_q :: Set Int
 my_q = fromList [0 .. 5]
