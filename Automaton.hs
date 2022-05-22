@@ -1,5 +1,5 @@
 module Automaton where 
-import Data.List as List ( group, intercalate, sort )
+import Data.List as List ( group, intercalate, sort, (\\) )
 import Data.Set as Set
     ( Set, empty, fromList, map, null, toList, union, unions )
 
@@ -7,11 +7,12 @@ class Automaton at where
     states :: at a -> Set a
     start :: at a -> Set a
     final :: at a -> Set a
-    moves :: at a -> Set (Move a)
+    -- moves :: at a -> Set (Move a)
     accepts :: (Ord a, Show a) => at a -> String -> Bool
     delta :: (Ord a, Show a) => at a -> Char -> a -> Set a
     isomorphism :: (Show a, Ord a, Show b, Ord b) => 
         at a -> Set b -> at b
+    alphabet_of :: at a -> [Char]
 
 show_states :: Show a => Set a -> String
 -- show_states [1, 2, 3] = "1, 2, 3"
@@ -40,10 +41,6 @@ instance (Show a) => Show (Move a) where
 rmdups :: Ord a => [a] -> [a]
 -- this is O(n log n). `nub` uses `Eq a`, so requires O(n)
 rmdups = fmap head . group . sort
-
-alphabet_of :: Automaton at => at a -> [Char]
--- return all the alphabet used in the automaton
-alphabet_of at = rmdups [c | (Move _ c _) <- toList $ moves at]
 
 differentiate_states :: 
     (Automaton at, Show a, Ord a, Show b, Ord b) 

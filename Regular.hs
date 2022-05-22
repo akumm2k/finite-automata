@@ -36,7 +36,7 @@ reg_to_nfa' (Or r1 r2) =
     let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
         emove = singleton $ EMove 0 (start n1' `union` start n2')
     in (NFA (fromList [0 .. l1 + l2])
-        (emove `union` (moves n1' `union` moves n2')) 
+        (emove `union` (movesN n1' `union` movesN n2')) 
         (singleton 0) (final n1' `union` final n2'))
 
 reg_to_nfa' (Then r1 r2) = 
@@ -45,7 +45,7 @@ reg_to_nfa' (Then r1 r2) =
         emoves = fromList 
             [EMove en1 (start n2') | en1 <- toList $ final n1']
     in (NFA (fromList [1 .. l1 + l2]) 
-        (emoves `union` moves n1' `union` moves n2')
+        (emoves `union` movesN n1' `union` movesN n2')
         (start n1') (final n2'))
 
 reg_to_nfa' (Opt r) = 
@@ -54,7 +54,7 @@ reg_to_nfa' (Opt r) =
         l = length $ states n
         n' = isomorphism n (fromList [1 .. l])
         emove = singleton $ EMove 0 (start n')
-    in NFA (fromList [0 .. l]) (emove `union` moves n') 
+    in NFA (fromList [0 .. l]) (emove `union` movesN n') 
         (singleton 0) (singleton 0 `union` final n')
 
 reg_to_nfa' (Star r) = 
@@ -65,7 +65,7 @@ reg_to_nfa' (Star r) =
         emoves = fromList ([EMove 0 (start n' `union` final n')] 
             ++ [EMove f (singleton 0) | f <- toList $ final n'])
     in NFA (fromList [0 .. l]) 
-        (emoves `union` moves n') (singleton 0) (final n')
+        (emoves `union` movesN n') (singleton 0) (final n')
 
 regs_to_distinct_nfa :: Reg -> Reg -> (Int, Int, NFA Int, NFA Int)
 -- for two regs, get the corresponding distinct NFAs w/ their lens

@@ -18,10 +18,10 @@ instance Automaton NFA where
     states = statesN
     start = startN 
     final = finalN 
-    moves = movesN
     delta = deltaN
     accepts = acceptsN
     isomorphism = isomorphismN
+    alphabet_of = alphabet_of_nfa
 
 data NFA a = 
     NFA {statesN :: Set a, movesN :: Set (Move a), 
@@ -84,6 +84,9 @@ acceptsN nfa s =
     in case reached of 
         Just qs -> or [f `elem` qs | f <- toList $ finalN nfa]
         Nothing -> False
+
+alphabet_of_nfa :: NFA a -> [Char]
+alphabet_of_nfa d = rmdups $ [c | (Move _ c _) <- toList $ movesN d]
 
 {-
 let `p \ q` represent an epsilon transition from p to q

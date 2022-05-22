@@ -20,9 +20,9 @@ instance Automaton DFA where
     start = startD 
     final = finalD 
     delta = deltaD 
-    moves = movesD
     accepts = acceptsD
     isomorphism = isomorphismD
+    alphabet_of = alphabet_of_dfa
 
 data DFA a = 
     DFA {statesD :: Set a, movesD :: Set (Move a), 
@@ -78,6 +78,9 @@ acceptsD dfa s =
     in case mq of 
         Just q -> q `elem` (final dfa)
         Nothing -> False
+
+alphabet_of_dfa :: DFA a -> [Char]
+alphabet_of_dfa d = rmdups [c | (Move _ c _) <- toList $ movesD d]
 
 isomorphismD :: (Show a, Ord a, Show b, Ord b) => 
     DFA a -> Set b -> DFA b
@@ -189,7 +192,7 @@ minimize d =
 
 update_delta :: Ord a => DFA a -> Set a -> [(Set a, Int)] -> Set (Move Int)
 update_delta d@(DFA q' del' q0' f') reachable p_to_id = 
-    fromList [Move a' c (singleton b') | (Move a c b'') <- toList $ moves d,
+    fromList [Move a' c (singleton b') | (Move a c b'') <- toList $ movesD d,
         let [b] = toList b'',
         a `elem` reachable,
         let a' = get_id p_to_id a, 
