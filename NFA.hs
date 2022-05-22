@@ -34,6 +34,26 @@ instance (Show a, Ord a) =>  Show (NFA a) where
         "S0: " ++ show (toList s0) ++ " \n" ++
         "F: " ++ show (toList f) 
 
+data Move a = 
+    Move {from :: a, char :: Char, to :: Set a} 
+    | EMove {efrom :: a, eto :: Set a}
+    deriving (Eq)
+
+instance (Ord a) => Ord (Move a) where 
+    (<=) (Move p _ _) (EMove q _) = p <= q
+    (<=) (Move p c1 _) (Move q c2 _) = (p, c1) <= (q, c2)
+    (<=) (EMove p _) (EMove q _) = p <= q
+    (<=) (EMove _ p) (Move _ _ q) = p <= q
+    -- (<=) _ _ = True
+
+instance (Show a) => Show (Move a) where 
+    show (Move q c ps) = 
+        "(" ++ show q ++ " - " ++ [c] ++ " -> " 
+            ++ show_states ps ++ ")"
+    show (EMove q ps) = 
+        "(" ++ show q ++ " - " ++ "\\" ++ " -> " 
+            ++ show_states ps ++ ")"
+
 build_nfa :: Ord a => 
     Set a -> Set (Move a) -> Set a -> Set a -> NFA a
 build_nfa q delta s0 f = NFA q delta s0 f

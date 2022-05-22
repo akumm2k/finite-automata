@@ -15,8 +15,16 @@ import Data.Array ( listArray, (!) )
 )
 -}
 
+data DMove a = DMove {from :: a, char :: Char, to :: a}
+    deriving (Eq, Ord)
+
+instance Show a => Show (DMove a) where 
+    show (DMove p c q) = 
+        "(" ++ show p ++ " - " ++ show c ++ " -> " 
+            ++ show q ++ ")"
+
 instance Automaton DFA where
-    states = statesD 
+    states = statesD
     start = startD 
     final = finalD 
     delta = deltaD 
@@ -25,33 +33,30 @@ instance Automaton DFA where
     alphabet_of = alphabet_of_dfa
 
 data DFA a = 
-    DFA {statesD :: Set a, movesD :: Set (Move a), 
+    DFA {statesD :: Set a, movesD :: Set (DMove a), 
         startD :: Set a, finalD :: Set a}
 
 instance (Show a, Ord a) =>  Show (DFA a) where 
     show (DFA q delta q0 f) = 
-        "Q: " ++ show (toList q) ++ " \n" ++
+        "Q: " ++ show q ++ " \n" ++
         "delta: " ++ show (sort (toList delta)) ++ " \n" ++ 
         "q0: " ++ show q0' ++ " \n" ++
         "F: " ++ show (toList f) 
         where [q0'] = toList q0 
 
-build_dfa :: Ord a => Set a -> Set (Move a) 
+build_dfa :: Ord a => Set a -> Set (DMove a) 
     -> Set a -> Set a -> DFA a
 build_dfa q delta q0 f = 
     if is_deterministic (delta, q0) then DFA q delta q0 f
     else error ("Non-deterministic move detected.")
 
-is_deterministic :: (Set (Move a), Set a) -> Bool 
+is_deterministic :: (Set (DMove a), Set a) -> Bool 
 -- return true if the moves have only one sink state
-is_deterministic (ms, q0) = 
-    and [null $ tail (toList q) | (Move _ _ q) <- toList ms] 
-    && null [1 | (EMove _ _) <- toList ms] 
-    && (null $ tail $ toList q0)
+is_deterministic (ms, q0) = (null $ tail $ toList q0)
 
 deltaD :: Ord a => DFA a -> Char -> a -> Set a
 -- return the transition from p w/ c in dfa
-deltaD dfa c p = unions
+deltaD dfa c p = fromList
     [to m | m <- toList $ movesD dfa, char m == c, from m == p]
 
 {-
@@ -80,7 +85,7 @@ acceptsD dfa s =
         Nothing -> False
 
 alphabet_of_dfa :: DFA a -> [Char]
-alphabet_of_dfa d = rmdups [c | (Move _ c _) <- toList $ movesD d]
+alphabet_of_dfa d = rmdups [c | (DMove _ c _) <- toList $ movesD d]
 
 isomorphismD :: (Show a, Ord a, Show b, Ord b) => 
     DFA a -> Set b -> DFA b
@@ -90,9 +95,9 @@ isomorphismD d@(DFA q moves q0 f) qs'' =
         qs' = toList qs''
         h = zip qs qs'
         [q0'] = toList q0
-        moves' = fromList [(Move hp c (singleton hq)) | 
-            (Move p c q) <- toList moves, let [q'] = toList q, 
-            let Just hp = (lookup p h), let Just hq = lookup q' h]
+        moves' = fromList [(DMove hp c hq) | 
+            (DMove p c q) <- toList moves, 
+            let Just hp = (lookup p h), let Just hq = lookup q h]
         Just q0'' = lookup q0' h
         f' = fromList [x' | x <- toList f, let Just x' = lookup x h]
     in DFA (fromList qs') moves' (singleton q0'') f'
@@ -190,10 +195,9 @@ minimize d =
         q0 = fromList [get_id p_to_id $ head (toList $ start d)]
     in DFA (fromList q) delta q0 f 
 
-update_delta :: Ord a => DFA a -> Set a -> [(Set a, Int)] -> Set (Move Int)
+update_delta :: Ord a => DFA a -> Set a -> [(Set a, Int)] -> Set (DMove Int)
 update_delta d@(DFA q' del' q0' f') reachable p_to_id = 
-    fromList [Move a' c (singleton b') | (Move a c b'') <- toList $ movesD d,
-        let [b] = toList b'',
+    fromList [DMove a' c b' | (DMove a c b) <- toList $ movesD d,
         a `elem` reachable,
         let a' = get_id p_to_id a, 
         let b' = get_id p_to_id b

@@ -8,7 +8,7 @@ import Queue
 import Data.List as List ( (\\) )
 import Data.Set as Set
     ( empty, fromList, intersection, powerSet, singleton,
-      toList, union, Set, unions )
+      toList, union, Set, unions, difference )
 
 reg_to_dfa :: String -> DFA Int
 reg_to_dfa = minimize . nfa_to_dfa . reg_to_nfa 
@@ -80,8 +80,12 @@ all states in the DFA are converted to sigleton sets
 in the NFA. DFAs are internally implemented with singleton sets
 so we can convert them to NFAs directly.
 -}
-dfa_to_nfa :: DFA a -> NFA a 
-dfa_to_nfa (DFA q delta q0 f) = NFA q delta q0 f 
+dfa_to_nfa :: (Ord a) => DFA a -> NFA a 
+dfa_to_nfa (DFA q delta q0 f) = NFA q delta' q0 f 
+    where
+        delta' = fromList
+            [Move p c (singleton q) | (DMove p c q) <- toList delta]
+    
 
 {-
 * NFA to DFA:
@@ -124,14 +128,14 @@ subset_constr' :: queue nfa alphabet states visited_states
 -}
 subset_constr' :: (Show a, Ord a) => 
     FQueue (Set a) -> NFA a -> String 
-    -> [Set a] -> Set (Move (Set a)) -> Set (Move (Set a))
+    -> Set (Set a) -> Set (DMove (Set a)) -> Set (DMove (Set a))
 subset_constr' queue _ _ states moves | isEmpty queue = moves 
 
 subset_constr' queue nfa alphabet visited moves = 
     let Just (states, queue') = dequeue queue
 
         moves' = fromList 
-            [Move states c (singleton ps) | 
+            [DMove states c ps | 
             c <- alphabet, let ps = unions 
                                 [p | q <- toList states, 
                                 let p = delta nfa c q, 
@@ -139,20 +143,20 @@ subset_constr' queue nfa alphabet visited moves =
             ps /= empty_set
             ] -- compute new transitions skipping empty ones
             
-        new_states = unions 
-            [ps | Move _ _ ps <- toList moves']
-        visited' = states : visited 
+        new_states = fromList 
+            [ps | DMove _ _ ps <- toList moves']
+        visited' = (singleton states) `union` visited
         
         new_queue = foldr enqueue queue' 
-            ((toList new_states) \\ visited')
+            (new_states `difference` visited')
     in 
         (subset_constr' new_queue nfa alphabet 
             visited' (moves `union` moves'))
 
-subset_constr :: (Show a, Ord a) => NFA a -> Set (Move (Set a))
+subset_constr :: (Show a, Ord a) => NFA a -> Set (DMove (Set a))
 subset_constr n@(NFA q moves q0 f) = 
     let queue = foldr enqueue empty_queue (powerSet q)
-    in subset_constr' queue n (alphabet_of n) [] empty_set
+    in subset_constr' queue n (alphabet_of n) empty_set  empty_set
 
 empty_queue :: FQueue a
 empty_queue = Queue.empty

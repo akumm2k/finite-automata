@@ -7,7 +7,6 @@ class Automaton at where
     states :: at a -> Set a
     start :: at a -> Set a
     final :: at a -> Set a
-    -- moves :: at a -> Set (Move a)
     accepts :: (Ord a, Show a) => at a -> String -> Bool
     delta :: (Ord a, Show a) => at a -> Char -> a -> Set a
     isomorphism :: (Show a, Ord a, Show b, Ord b) => 
@@ -17,26 +16,6 @@ class Automaton at where
 show_states :: Show a => Set a -> String
 -- show_states [1, 2, 3] = "1, 2, 3"
 show_states qs = intercalate ", " (show <$> (toList qs))
-
-data Move a = 
-    Move {from :: a, char :: Char, to :: Set a} 
-    | EMove {efrom :: a, eto :: Set a}
-    deriving (Eq)
-
-instance (Ord a) => Ord (Move a) where 
-    (<=) (Move p _ _) (EMove q _) = p <= q
-    (<=) (Move p c1 _) (Move q c2 _) = (p, c1) <= (q, c2)
-    (<=) (EMove p _) (EMove q _) = p <= q
-    (<=) (EMove _ p) (Move _ _ q) = p <= q
-    -- (<=) _ _ = True
-
-instance (Show a) => Show (Move a) where 
-    show (Move q c ps) = 
-        "(" ++ show q ++ " - " ++ [c] ++ " -> " 
-            ++ show_states ps ++ ")"
-    show (EMove q ps) = 
-        "(" ++ show q ++ " - " ++ "\\" ++ " -> " 
-            ++ show_states ps ++ ")"
 
 rmdups :: Ord a => [a] -> [a]
 -- this is O(n log n). `nub` uses `Eq a`, so requires O(n)

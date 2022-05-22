@@ -8,12 +8,12 @@ import Data.Set
 q1 :: Set Int
 q1 = fromList [0, 1, 2]
 
-del1 :: Set (Move Int)
+del1 :: Set (DMove Int)
 del1 = fromList
-    ([Move x '0'  (singleton x) | x <- toList q1] ++ [
-    Move 0 '1' (singleton 1),
-    Move 1 '1' (singleton 2),
-    Move 2 '1' (singleton 0)
+    ([DMove x '0'  x | x <- toList q1] ++ [
+    DMove 0 '1' 1,
+    DMove 1 '1' 2,
+    DMove 2 '1' 0
     ])
 
 q01 :: Set Int
@@ -29,13 +29,13 @@ d1 = DFA q1 del1 q01 f1
 q2 :: Set Int
 q2 = fromList [0, 1, 2, 3]
 
-del2 :: Set (Move Int)
+del2 :: Set (DMove Int)
 del2 = fromList  
-    ([Move x '0' (fromList [x]) | x <- toList q2] ++ [
-    Move 0 '1' (fromList [1]),
-    Move 1 '1' (fromList [2]),
-    Move 2 '1' (fromList [3]),
-    Move 3 '1' (fromList [0])
+    ([DMove x '0' x | x <- toList q2] ++ [
+    DMove 0 '1'  1,
+    DMove 1 '1'  2,
+    DMove 2 '1'  3,
+    DMove 3 '1'  0
     ])
 
 q02 :: Set Int
@@ -50,11 +50,11 @@ d2 = DFA q2 del2 q02 f2
 
 q3 = fromList [0, 1, 2]
 del3 = fromList [
-    Move 0 'a' (singleton 1),
-    Move 0 'b' (singleton 2),
-    Move 1 'b' (singleton 1),
-    Move 2 'a' (singleton 2)
+    DMove 0 'a' 1,
+    DMove 0 'b' 2,
+    DMove 1 'b' 1,
+    DMove 2 'a' 2
     ]
-q03 = (singleton 0)
+q03 = 0
 
 f3 = fromList [1, 2]
