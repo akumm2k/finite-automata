@@ -5,6 +5,7 @@ import Automaton
 import Data.Set as Set
     ( difference, empty, fromList, singleton, toList, Set, unions )
 import Data.List as List ( null, (\\), nub, sort )
+import Data.Array ( listArray, (!) )
 {-
 * DFA: 
 (
@@ -128,11 +129,12 @@ split_part dfa part parts parts_len alphabet =
         added_len = length splits - 1
     in (added_len, splits)
     where 
+        parts_arr = listArray (0, parts_len - 1) parts
         part_id q = 
             if null q then -1 else
             let q' = head $ toList q in
             head [i | i <- [0 .. (parts_len - 1)], 
-                q' `elem` (parts !! i)]
+                q' `elem` (parts_arr ! i)]
 
 {-
 * Table filling algorithm to find equivalent states
