@@ -38,7 +38,7 @@ data DFA a =
 
 instance (Show a, Ord a) =>  Show (DFA a) where 
     show (DFA q delta q0 f) = 
-        "Q: " ++ show q ++ " \n" ++
+        "Q: " ++ show (toList q) ++ " \n" ++
         "delta: " ++ show (sort (toList delta)) ++ " \n" ++ 
         "q0: " ++ show q0' ++ " \n" ++
         "F: " ++ show (toList f) 
