@@ -105,17 +105,16 @@ nfa_to_dfa :: (Ord a, Show a) => NFA a -> DFA (Set a)
 nfa_to_dfa n = 
     DFA pq delta' (singleton s0) f'
     where 
-        pq = powerSet q
         n'@(NFA q delta s0 f) = elim_epsilon n
-        delta' = subset_constr n'
+        (pq, delta') = subset_constr n'
         f' = fromList $ 
             [q | q <- toList pq, q `intersection` f /= empty_set]
 
 {-
-* Subset Construction for nfa n
-Build new transitions
+* Subset Construction for nfa n: BFS
+Build new transitions 
     - for each state in queue starting with those 
-    in the Power Set of s0
+    in the starting state of the new dfa: s0
         while queue
             s <- dequeue queue
             find all transitions on each character 
@@ -123,35 +122,36 @@ Build new transitions
                 skip all empty state transitions
             enqueue new states created
 -}
-subset_constr :: (Show a, Ord a) => NFA a -> Set (DMove (Set a))
-subset_constr n@(NFA q moves q0 f) = 
-    let queue = foldr enqueue empty_queue (powerSet q)
-    in subset_constr' queue n (alphabet_of n) empty_set  empty_set
+subset_constr :: (Show a, Ord a) => NFA a -> (Set (Set a), Set (DMove (Set a)))
+subset_constr n@(NFA q moves s0 f) = 
+    let queue = enqueue s0 empty_queue 
+    in subset_constr' queue n (alphabet_of n) (singleton s0)  empty_set
 
 {-
 subset_constr' :: queue nfa alphabet states visited_states 
     constructed_moves_so_far
 -}
 subset_constr' :: (Show a, Ord a) => 
-    FQueue (Set a) -> NFA a -> String 
-    -> Set (Set a) -> Set (DMove (Set a)) -> Set (DMove (Set a))
-subset_constr' queue _ _ states moves | isEmpty queue = moves 
+    FQueue (Set a) -> NFA a -> String -> Set (Set a) -> 
+    Set (DMove (Set a)) -> (Set (Set a), Set (DMove (Set a)))
+subset_constr' queue _ _ visited moves 
+    | isEmpty queue = (visited, moves)
 
 subset_constr' queue nfa alphabet visited moves = 
     let Just (states, queue') = dequeue queue
-
-        moves' = fromList 
-            [DMove states c ps | 
+        new_moves_n_states =  
+            [(DMove states c ps, ps) | 
             c <- alphabet, let ps = unions 
                                 [p | q <- toList states, 
                                 let p = delta nfa c q, 
                                 p /= empty_set], 
             ps /= empty_set
             ] -- compute new transitions skipping empty ones
-            
-        new_states = fromList 
-            [ps | DMove _ _ ps <- toList moves']
-        visited' = (singleton states) `union` visited
+        new_states = fromList $ snd <$> new_moves_n_states
+        moves' = fromList $ fst <$> new_moves_n_states
+
+        visited' = 
+             (singleton states) `union` visited
         
         new_queue = foldr enqueue queue' 
             (new_states `difference` visited')
