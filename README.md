@@ -83,8 +83,6 @@ True
 
 $\in \ O(n ^ 4)$
 
-$L(d2) =$ { w | w $\in$  {0, 1}, |w|$_1$ = 2k, k $\in$ {$0 \ ..\ \infty$} }
-
 ```
 $ ghci tests/dfa-test.hs 
 ...
@@ -100,6 +98,8 @@ delta: [(0 - 0 -> 0),(0 - 1 -> 1),(1 - 0 -> 1),(1 - 1 -> 0)]
 q0: 0 
 F: [0]
 ```
+
+$L(d2) =$ { w | w $\in$  {0, 1}, |w|$_1$ = 2k, k $\in$ {$0 \ ..\ \infty$} }
 
 ## Running tests from a file 
 
@@ -129,7 +129,7 @@ bba
 ```
 $ ghci filetest.hs
 ...
-> play "tests/n.txt"
+> play "tests/nfa.txt"
 NFA(n) or DFA(d)?
 n
 Print the automaton? y/n
