@@ -44,12 +44,12 @@ readNMove :: [String] -> Move Int
 readNMove (p' : "\\" : q') =
     let p = read p' :: Int 
         q = fromList (read <$> q' :: [Int])
-    in EMove p q
+    in emove p q
 readNMove (p' : c' : q') =
     let p = read p' 
         [c] = c' 
         q = fromList (read <$> q' :: [Int])
-    in (Move p c q)
+    in nmove p c q
 readNMove _ = error "bad move syntax"
 
 readDMove :: [String] -> DMove Int 
