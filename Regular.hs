@@ -1,5 +1,6 @@
 module Regular where 
 
+import Debug.Trace
 import Automaton
 import DFA 
 import NFA 
@@ -18,62 +19,59 @@ Reg to nfa
     r -> NFA q delta s0 f
 -}
 reg_to_nfa :: String -> NFA Int 
-reg_to_nfa = reg_to_nfa' . get_reg 
-
-reg_to_nfa' :: Reg -> NFA Int
-reg_to_nfa' Epsilon = NFA z empty_set z z
-    where z = singleton 0
-    -- Epsilon = NFA [0] [] [0] [0]
-
-reg_to_nfa' (Literal c) = NFA q ms (singleton 0) (singleton 1)
+reg_to_nfa s = nfa
     where 
-        q = (fromList [0, 1])
-        ms = singleton (nmove 0 c (singleton 1))
-    -- Literal c = NFA [0, 1] [0 - c -> 1] [1]
+        r = get_reg s
+        (nfa, _) = reg_to_nfa' r 0
 
-reg_to_nfa' (Or r1 r2) = 
+reg_to_nfa' :: Reg -> Int -> (NFA Int, Int)
+reg_to_nfa' Epsilon i = (NFA z empty_set z z, i + 1)
+    where z = singleton i
+    -- Epsilon = NFA [i] [] [i] [i]
+
+reg_to_nfa' (Literal c) i = 
+        (NFA q ms (singleton i) (singleton j), j + 1)
+    where 
+        j = i + 1
+        q = (fromList [i, j])
+        ms = singleton (nmove i c (singleton j))
+    -- Literal c = NFA [i, j] [i - c -> j] [j]
+
+reg_to_nfa' (Or r1 r2) i = 
     --  Or r1 r2: new start -\-> [start n1, start n2]
-    let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
-        eps_move = singleton $ emove 0 (start n1' `union` start n2')
-    in (NFA (fromList [0 .. l1 + l2])
-        (eps_move `union` (movesN n1' `union` movesN n2')) 
-        (singleton 0) (final n1' `union` final n2'))
+    let (n1', i') = reg_to_nfa' r1 (i + 1)
+        (n2', i'') = reg_to_nfa' r2 i'
+        eps_move = singleton $ emove i (start n1' `union` start n2')
+        nfa = NFA (fromList [i + 1 .. i'' - 1])
+                (unions [eps_move, movesN n1', movesN n2']) 
+                (singleton i) (final n1' `union` final n2')
+        in (nfa, i'')
 
-reg_to_nfa' (Then r1 r2) = 
+reg_to_nfa' (Then r1 r2) i = 
     -- Then r1 r2: final n1 -\-> start n2
-    let (l1, l2, n1', n2') = regs_to_distinct_nfa r1 r2
+    let (n1', i') = reg_to_nfa' r1 i
+        (n2', i'') = reg_to_nfa' r2 i'
         emoves = fromList 
             [emove en1 (start n2') | en1 <- toList $ final n1']
-    in (NFA (fromList [1 .. l1 + l2]) 
-        (emoves `union` movesN n1' `union` movesN n2')
-        (start n1') (final n2'))
+    in 
+        (NFA (fromList [i .. i'' - 1]) 
+            (emoves `union` movesN n1' `union` movesN n2')
+            (start n1') (final n2'), i'')
 
-reg_to_nfa' (Opt r) = 
+reg_to_nfa' (Opt r) i = 
     -- Opt r1: new start -\-> start n1 | new start \in final
-    let n = reg_to_nfa' r 
-        l = length $ states n
-        n' = isomorphism n (fromList [1 .. l])
-        eps_move = singleton $ emove 0 (start n')
-    in NFA (fromList [0 .. l]) (eps_move `union` movesN n') 
-        (singleton 0) (singleton 0 `union` final n')
+    let (n, i') = reg_to_nfa' r (i + 1)
+        eps_move = singleton $ emove i (start n)
+    in (NFA (fromList [i .. i' - 1]) (eps_move `union` movesN n) 
+        (singleton i) (singleton i `union` final n), i')
 
-reg_to_nfa' (Star r) = 
+reg_to_nfa' (Star r) i = 
     -- Star r1: new start <-\-> final n1, new start -\-> start n1
-    let n = reg_to_nfa' r 
-        l = length $ states n
-        n' = isomorphism n (fromList [1 .. l])
-        emoves = fromList ([emove 0 (start n' `union` final n')] 
-            ++ [emove f (singleton 0) | f <- toList $ final n'])
-    in NFA (fromList [0 .. l]) 
-        (emoves `union` movesN n') (singleton 0) (final n')
-
-regs_to_distinct_nfa :: Reg -> Reg -> (Int, Int, NFA Int, NFA Int)
--- for two regs, get the corresponding distinct NFAs w/ their lens
-regs_to_distinct_nfa r1 r2 = 
-    let n1 = reg_to_nfa' r1 
-        n2 = reg_to_nfa' r2
-         -- map the states to distinct ints
-    in differentiate_states n1 n2
+    let (n, i') = reg_to_nfa' r (i + 1)
+        emoves = fromList ([emove i (start n `union` final n)] 
+            ++ [emove f (singleton i) | f <- toList $ final n])
+    in (NFA (fromList [i .. i' - 1]) (emoves `union` movesN n) 
+        (singleton i) (final n), i')
 
 {-
 all states in the DFA are converted to sigleton sets

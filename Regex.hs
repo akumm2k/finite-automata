@@ -7,7 +7,8 @@ data Reg =
     Then Reg Reg |      -- r1.r2
     Opt Reg |           -- r?
     Star Reg            -- r*
-
+    deriving (Eq)
+    
 instance Show Reg where
     show Epsilon        = []
     show (Literal c)    = [c]
