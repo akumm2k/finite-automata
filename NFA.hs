@@ -135,11 +135,12 @@ elim_epsilon n@(NFA q ms q0 f) =
         f' = f `union` (fromList nf )
 
         deterministic_moves = [Move p c q' | 
-            (Move p c q) <- toList ms, 
+            (Move p c q) <- toList ms, c /= Nothing,
             let q' = unions (set_map (epsilon_closure n) q)]
 
         new_moves = [Move p c r | (Move p Nothing qs) <- toList ms, 
-            q <- toList qs, (Move q' c r) <- toList ms, q == q'
+            q <- toList qs, (Move q' c r) <- toList ms, c /= Nothing, 
+            q == q'
             ]
     in NFA q (fromList $ deterministic_moves ++ new_moves) nq0 f'
 
