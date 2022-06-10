@@ -29,10 +29,10 @@ play filename = do
         -- moves = fromList ((readMove . words) <$> moves')
 
     case answer of 
-        "n" -> let moves = fromList ((readNMove . words) <$> moves')
+        "n" -> let moves = ((readNMove . words) <$> moves')
             in play_am (build_nfa q moves start final) 
             test_strs print_am
-        "d" -> let moves = fromList ((readDMove . words) <$> moves')
+        "d" -> let moves = ((readDMove . words) <$> moves')
             in play_am (build_dfa q moves start final) 
             test_strs print_am
         _ -> putStrLn "bad response"
