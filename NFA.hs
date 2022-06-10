@@ -121,8 +121,8 @@ alphabet_of_nfa d = rmdups $
 
 {-
 let `p \ q` represent an epsilon transition from p to q
-p \ q and p is a starting state, then q is a starting state
-p \ q and q is a final state, then p is a final state
+if p \ q and p is a starting state, then q is a starting state
+if p \ q and q is a final state, then p is a final state
 
 for each `p \ q` elimination, create new move `p c r` such that
 there is a move `q c r`
@@ -139,7 +139,8 @@ elim_epsilon n@(NFA q ms q0 f) =
             let q' = unions (set_map (epsilon_closure n) q)]
 
         new_moves = [Move p c r | (Move p Nothing qs) <- toList ms, 
-            q <- toList qs, (Move q' c r) <- toList ms, c /= Nothing, 
+            q <- toList $ unions $ set_map (epsilon_closure n) qs, 
+            (Move q' c r) <- toList ms, c /= Nothing, 
             q == q'
             ]
     in NFA q (fromList $ deterministic_moves ++ new_moves) nq0 f'
