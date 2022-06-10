@@ -13,6 +13,8 @@ class Automaton at where
         at a -> Set b -> at b
     alphabet_of :: at a -> [Char]
 
+type Move a = ((a, Maybe Char), (Set a))
+
 show_states :: Show a => Set a -> String
 -- show_states [1, 2, 3] = "1, 2, 3"
 show_states qs = intercalate ", " (show <$> (toList qs))

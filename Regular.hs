@@ -1,12 +1,11 @@
 module Regular where 
 
-import Debug.Trace
 import Automaton
 import DFA 
 import NFA 
 import Regex 
 import Queue 
-import Data.List as List ( (\\) )
+import Data.List as List ((\\), nub)
 import Data.Set as Set
     ( empty, fromList, intersection, powerSet, singleton,
       toList, union, Set, unions, difference )
@@ -29,7 +28,7 @@ It returns an NFA corresponding to the regular expression,
 plus the next ID that's available after that. 
 -}
 reg_to_nfa' :: Reg -> Int -> (NFA Int, Int)
-reg_to_nfa' Epsilon i = (NFA z empty_set z z, i + 1)
+reg_to_nfa' Epsilon i = (NFA z [] z z, i + 1)
     where z = singleton i
     -- Epsilon: NFA [i] [] [i] [i]
 
@@ -38,16 +37,16 @@ reg_to_nfa' (Literal c) i =
     where 
         j = i + 1
         q = (fromList [i, j])
-        ms = singleton (nmove i c (singleton j))
+        ms = [(nmove i c (singleton j))]
     -- Literal c: NFA [i, j] [i - c -> j] [j]
 
 reg_to_nfa' (Or r1 r2) i = 
     --  Or r1 r2: new start -\-> [start n1, start n2]
     let (n1', i') = reg_to_nfa' r1 (i + 1)
         (n2', i'') = reg_to_nfa' r2 i'
-        eps_move = singleton $ emove i (start n1' `union` start n2')
+        eps_move =  [emove i (start n1' `union` start n2')]
         nfa = NFA (fromList [i + 1 .. i'' - 1])
-                (unions [eps_move, movesN n1', movesN n2']) 
+                (concat [eps_move, movesN n1', movesN n2']) 
                 (singleton i) (final n1' `union` final n2')
         in (nfa, i'')
 
@@ -55,26 +54,27 @@ reg_to_nfa' (Then r1 r2) i =
     -- Then r1 r2: final n1 -\-> start n2
     let (n1', i') = reg_to_nfa' r1 i
         (n2', i'') = reg_to_nfa' r2 i'
-        emoves = fromList 
-            [emove en1 (start n2') | en1 <- toList $ final n1']
+        emoves =  [emove en1 (start n2') | en1 <- toList $ final n1']
     in 
         (NFA (fromList [i .. i'' - 1]) 
-            (emoves `union` movesN n1' `union` movesN n2')
+            (nub (emoves ++ movesN n1' ++ movesN n2'))
             (start n1') (final n2'), i'')
 
 reg_to_nfa' (Opt r) i = 
     -- Opt r1: new start -\-> start n1 | new start \in final
     let (n, i') = reg_to_nfa' r (i + 1)
-        eps_move = singleton $ emove i (start n)
-    in (NFA (fromList [i .. i' - 1]) (eps_move `union` movesN n) 
+        eps_move = [emove i (start n)]
+        all_moves = nub (eps_move ++ movesN n)
+    in (NFA (fromList [i .. i' - 1]) all_moves 
         (singleton i) (singleton i `union` final n), i')
 
 reg_to_nfa' (Star r) i = 
     -- Star r1: new start <-\-> final n1, new start -\-> start n1
     let (n, i') = reg_to_nfa' r (i + 1)
-        emoves = fromList ([emove i (start n `union` final n)] 
+        emoves =  ([emove i (start n `union` final n)] 
             ++ [emove f (singleton i) | f <- toList $ final n])
-    in (NFA (fromList [i .. i' - 1]) (emoves `union` movesN n) 
+        all_moves = nub (emoves ++ movesN n)
+    in (NFA (fromList [i .. i' - 1]) all_moves 
         (singleton i) (final n), i')
 
 {-
@@ -85,8 +85,7 @@ so we can convert them to NFAs directly.
 dfa_to_nfa :: (Ord a) => DFA a -> NFA a 
 dfa_to_nfa (DFA q delta q0 f) = NFA q delta' q0 f 
     where
-        delta' = fromList
-            [nmove p c (singleton q) | (DMove p c q) <- toList delta]
+        delta' = [nmove p c (singleton q) | (DMove p c q) <- delta]
     
 
 {-
@@ -121,10 +120,10 @@ Build new transitions
             enqueue new states created
 -}
 subset_constr :: (Show a, Ord a) => 
-    NFA a -> (Set (Set a), Set (DMove (Set a)))
+    NFA a -> (Set (Set a), [(DMove (Set a))])
 subset_constr n@(NFA q moves s0 f) = 
     let queue = enqueue s0 empty_queue 
-    in subset_constr' queue n (alphabet_of n) (singleton s0)  empty_set
+    in subset_constr' queue n (alphabet_of n) (singleton s0)  []
 
 {-
 subset_constr' :: queue nfa alphabet states visited_states 
@@ -132,7 +131,7 @@ subset_constr' :: queue nfa alphabet states visited_states
 -}
 subset_constr' :: (Show a, Ord a) => 
     FQueue (Set a) -> NFA a -> String -> Set (Set a) -> 
-    Set (DMove (Set a)) -> (Set (Set a), Set (DMove (Set a)))
+    [(DMove (Set a))] -> (Set (Set a), [(DMove (Set a))])
 subset_constr' queue _ _ visited moves 
     | isEmpty queue = (visited, moves)
 
@@ -147,16 +146,15 @@ subset_constr' queue nfa alphabet visited moves =
             ps /= empty_set
             ] -- compute new transitions skipping empty ones
         new_states = fromList $ snd <$> new_moves_n_states
-        moves' = fromList $ fst <$> new_moves_n_states
-
+        moves' = fst <$> new_moves_n_states
+        all_moves = nub (moves ++ moves')
         visited' = 
              (singleton states) `union` visited
         
         new_queue = foldr enqueue queue' 
             (new_states `difference` visited')
-    in 
-        (subset_constr' new_queue nfa alphabet 
-            visited' (moves `union` moves'))
+    in (subset_constr' new_queue nfa alphabet 
+            visited' all_moves)
 
 empty_queue :: FQueue a
 empty_queue = Queue.empty

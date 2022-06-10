@@ -16,7 +16,7 @@ import Data.Array ( listArray, (!) )
 -}
 
 data DFA a = 
-    DFA {statesD :: Set a, movesD :: Set (DMove a), 
+    DFA {statesD :: Set a, movesD :: [(DMove a)], 
         startD :: Set a, finalD :: Set a}
 
 data DMove a = DMove {from :: a, char :: Char, to :: a}
@@ -25,7 +25,7 @@ data DMove a = DMove {from :: a, char :: Char, to :: a}
 instance (Show a, Ord a) =>  Show (DFA a) where 
     show (DFA q delta q0 f) = 
         "Q: " ++ show (toList q) ++ " \n" ++
-        "delta: " ++ show (sort (toList delta)) ++ " \n" ++ 
+        "delta: " ++ show (sort delta) ++ " \n" ++ 
         "q0: " ++ show q0' ++ " \n" ++
         "F: " ++ show (toList f) 
         where [q0'] = toList q0 
@@ -44,13 +44,13 @@ instance Automaton DFA where
     isomorphism = isomorphismD
     alphabet_of = alphabet_of_dfa
 
-build_dfa :: Ord a => Set a -> Set (DMove a) 
+build_dfa :: Ord a => Set a -> [(DMove a)]
     -> Set a -> Set a -> DFA a
 build_dfa q delta q0 f = 
     if deterministic_q0 (delta, q0) then DFA q delta q0 f
     else error ("Non-deterministic move detected.")
 
-deterministic_q0 :: (Set (DMove a), Set a) -> Bool 
+deterministic_q0 :: ([(DMove a)], Set a) -> Bool 
 -- return true if the starting state is deterministic
 deterministic_q0 (ms, q0) = (null $ tail $ toList q0)
 
@@ -75,7 +75,7 @@ delta_star' q dfa (c : cs) =
 deltaD :: Ord a => DFA a -> Char -> a -> Set a
 -- return the transition from p w/ c in dfa
 deltaD dfa c p = fromList
-    [to m | m <- toList $ movesD dfa, char m == c, from m == p]
+    [to m | m <- movesD dfa, char m == c, from m == p]
 
 
 acceptsD :: (Ord a, Show a) => DFA a -> String -> Bool 
@@ -86,7 +86,7 @@ acceptsD dfa s =
         Nothing -> False
 
 alphabet_of_dfa :: DFA a -> [Char]
-alphabet_of_dfa d = rmdups [c | (DMove _ c _) <- toList $ movesD d]
+alphabet_of_dfa d = rmdups [c | (DMove _ c _) <- movesD d]
 
 isomorphismD :: (Show a, Ord a, Show b, Ord b) => 
     DFA a -> Set b -> DFA b
@@ -96,8 +96,8 @@ isomorphismD d@(DFA q moves q0 f) qs'' =
         qs' = toList qs''
         h = zip qs qs'
         [q0'] = toList q0
-        moves' = fromList [(DMove hp c hq) | 
-            (DMove p c q) <- toList moves, 
+        moves' = [(DMove hp c hq) | 
+            (DMove p c q) <- moves, 
             let Just hp = (lookup p h), let Just hq = lookup q h]
         Just q0'' = lookup q0' h
         f' = fromList [x' | x <- toList f, let Just x' = lookup x h]
@@ -145,10 +145,10 @@ adjacentD d alphabet p =
     c <- alphabet, let qs = delta d c p, qs /= empty] 
 
 update_delta :: Ord a => 
-    DFA a -> Set a -> [(Set a, Int)] -> Set (DMove Int)
+    DFA a -> Set a -> [(Set a, Int)] -> [(DMove Int)]
 -- helper used to update transitions furing DFA minimization
 update_delta d@(DFA q' del' q0' f') reachable p_to_id = 
-    fromList [DMove a' c b' | (DMove a c b) <- toList $ movesD d,
+    [DMove a' c b' | (DMove a c b) <-  movesD d,
         a `elem` reachable,
         let a' = get_id p_to_id a, 
         let b' = get_id p_to_id b
