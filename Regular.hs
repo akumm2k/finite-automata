@@ -23,11 +23,15 @@ reg_to_nfa s = nfa
     where 
         r = get_reg s
         (nfa, _) = reg_to_nfa' r 0
-
+{-
+reg_to_nfa' takes a regular expression and the next available ID.  
+It returns an NFA corresponding to the regular expression, 
+plus the next ID that's available after that. 
+-}
 reg_to_nfa' :: Reg -> Int -> (NFA Int, Int)
 reg_to_nfa' Epsilon i = (NFA z empty_set z z, i + 1)
     where z = singleton i
-    -- Epsilon = NFA [i] [] [i] [i]
+    -- Epsilon: NFA [i] [] [i] [i]
 
 reg_to_nfa' (Literal c) i = 
         (NFA q ms (singleton i) (singleton j), j + 1)
@@ -35,7 +39,7 @@ reg_to_nfa' (Literal c) i =
         j = i + 1
         q = (fromList [i, j])
         ms = singleton (nmove i c (singleton j))
-    -- Literal c = NFA [i, j] [i - c -> j] [j]
+    -- Literal c: NFA [i, j] [i - c -> j] [j]
 
 reg_to_nfa' (Or r1 r2) i = 
     --  Or r1 r2: new start -\-> [start n1, start n2]
@@ -94,10 +98,6 @@ dfa_to_nfa (DFA q delta q0 f) = NFA q delta' q0 f
 for an NFA (Q, delta, S0, F)
 the following is the equivalent DFA
 (P(Q), delta', {S0}, {q | q intersetion f isn't null for q in P(Q)})
-TODO: new approach
-    start from the new starting state,
-    do a dfs to find reachable states, using a 
-    modified ajacent function
 -}
 nfa_to_dfa :: (Ord a, Show a) => NFA a -> DFA (Set a)
 nfa_to_dfa n = 
