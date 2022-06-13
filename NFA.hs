@@ -18,27 +18,13 @@ import Data.Maybe ( fromJust )
 
 data NFA a = 
     NFA {statesN :: Set a, movesN :: [Move a], 
-        startN :: Set a, finalN :: Set a}
-
--- data Move a = 
---     Move {from :: a, char :: Maybe Char, to :: Set a} 
---     deriving (Eq)
-
-
--- lookup_move :: Move a -> 
+        startN :: Set a, finalN :: Set a} 
 
 emove :: a -> Set a -> Move a
 emove a b = ((a, Nothing), b)
 
 nmove :: a -> Char -> Set a -> Move a 
 nmove a c b = ((a, Just c), b)
-
--- instance (Ord a) => Ord (Move a) where 
---     (<=) (Move p (Just c1) p') (Move q (Just c2) q') 
---         = (p, c1, p') <= (q, c2, q')
---     (<=) (Move p Nothing p') (Move q Nothing q') = (p, p') <= (q, q')
---     (<=) (Move p Nothing p') (Move q (Just _) q') = (p, p') <= (q, q')
---     (<=) (Move p _ p') (Move q _ q') = (p, p') <= (q, q')
 
 instance (Show a, Ord a) =>  Show (NFA a) where 
     show (NFA q delta s0 f) = 
