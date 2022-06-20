@@ -16,6 +16,8 @@ import Data.Maybe ( fromJust )
 )
 -}
 
+type Move a = ((a, Maybe Char), (Set a))
+
 data NFA a = 
     NFA {statesN :: Set a, movesN :: [Move a], 
         startN :: Set a, finalN :: Set a} 
