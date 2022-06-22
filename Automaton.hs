@@ -43,7 +43,7 @@ empty_set = Set.empty
 
 dfs :: (Show a, Ord a, Automaton at) => 
     at a -> (at a -> String -> a -> [a]) -> String -> Set a
--- find all reachable states in DFA d
+-- find all reachable states in Automaton d
 dfs d adjacent alphabet = fromList $ reverse $ loop s s
     where 
         loop visited [] = visited 
