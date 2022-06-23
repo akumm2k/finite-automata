@@ -148,7 +148,7 @@ left_derivative :: Reg -> String -> [String]
 left_derivative Epsilon s = [s]
 
 left_derivative (Literal c) (d : s) | (c == d) = [s]
-left_derivative (Literal c) s = []
+left_derivative (Literal _) _ = []
 
 left_derivative (Or a b) s = 
     left_derivative a s ++ left_derivative b s 

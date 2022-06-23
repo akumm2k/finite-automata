@@ -5,9 +5,9 @@ import DFA
 import NFA 
 import Regex 
 import Queue 
-import Data.List as List ((\\), nub)
+import Data.List as List (nub)
 import Data.Set as Set
-    ( empty, fromList, intersection, powerSet, singleton,
+    ( fromList, intersection, singleton,
       toList, union, Set, unions, difference )
 
 reg_to_dfa :: String -> DFA Int
@@ -102,7 +102,7 @@ nfa_to_dfa :: (Ord a, Show a) => NFA a -> DFA (Set a)
 nfa_to_dfa n = 
     DFA pq delta' (singleton s0) f'
     where 
-        n'@(NFA q delta s0 f) = elim_epsilon n
+        n'@(NFA _ _ s0 f) = elim_epsilon n
         (pq, delta') = subset_constr n'
         f' = fromList $ 
             [q | q <- toList pq, q `intersection` f /= empty_set]
@@ -121,7 +121,7 @@ Build new transitions
 -}
 subset_constr :: (Show a, Ord a) => 
     NFA a -> (Set (Set a), [(DMove (Set a))])
-subset_constr n@(NFA q moves s0 f) = 
+subset_constr n@(NFA _ _ s0 _) = 
     let queue = enqueue s0 empty_queue 
     in subset_constr' queue n (alphabet_of n) (singleton s0)  []
 

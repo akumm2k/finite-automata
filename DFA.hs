@@ -2,8 +2,8 @@ module DFA where
     
 import Automaton
 import Data.Set as Set
-    ( difference, empty, fromList, singleton, toList, Set, unions )
-import Data.List as List ( null, (\\), nub, sort )
+    ( difference, empty, fromList, singleton, toList, Set )
+import Data.List as List ( sort, nub )
 import Data.Array ( listArray, (!) )
 {-
 * DFA: 
@@ -52,7 +52,7 @@ build_dfa q delta q0 f =
 
 deterministic_q0 :: ([(DMove a)], Set a) -> Bool 
 -- return true if the starting state is deterministic
-deterministic_q0 (ms, q0) = (null $ tail $ toList q0)
+deterministic_q0 (_, q0) = (null $ tail $ toList q0)
 
 {-
 delta_star(q, wa) | w :: String, a :: Char 
@@ -91,7 +91,7 @@ alphabet_of_dfa d = rmdups [c | (DMove _ c _) <- movesD d]
 isomorphismD :: (Show a, Ord a, Show b, Ord b) => 
     DFA a -> Set b -> DFA b
 -- return an isomorphic dfa w/ states(DFA) renamed to qs'
-isomorphismD d@(DFA q moves q0 f) qs'' = 
+isomorphismD d@(DFA _ moves q0 f) qs'' = 
     let qs = toList $ states d
         qs' = toList qs''
         h = zip qs qs'
@@ -147,7 +147,7 @@ adjacentD d alphabet p =
 update_delta :: Ord a => 
     DFA a -> Set a -> [(Set a, Int)] -> [(DMove Int)]
 -- helper used to update transitions furing DFA minimization
-update_delta d@(DFA q' del' q0' f') reachable p_to_id = 
+update_delta d reachable p_to_id = 
     [DMove a' c b' | (DMove a c b) <-  movesD d,
         a `elem` reachable,
         let a' = get_id p_to_id a, 
@@ -176,7 +176,7 @@ state_partition :: (Show a, Ord a) =>
 -- return a list of equivalent states using the table filling 
 --      algorithm
 -- described above
-state_partition d _ ps ps_len num_states i j 
+state_partition _ _ ps ps_len num_states i j 
     | j >= i || ps_len == num_states = (ps_len, ps)
 
 state_partition d alphabet ps ps_len num_states i j = 

@@ -89,7 +89,7 @@ if p \in (epsilon_closure q) and EMove p r
     then r \in (epsilon_closure q)
 -}
 epsilon_closure' :: (Show a, Ord a) => NFA a -> Set a -> Set a
-epsilon_closure' n@(NFA q del s0 f) qs = 
+epsilon_closure' n@(NFA _ del _ _) qs = 
     let new_qs = fromList [r | p <- toList qs, 
             ((p', Nothing), enp) <- del, 
                 p == p', r <- toList enp]
@@ -139,7 +139,7 @@ elim_epsilon n@(NFA q ms q0 f) =
 isomorphismN :: (Show a, Ord a, Show b, Ord b) => 
     NFA a -> Set b -> NFA b 
 -- return an isomorphic NFA with states(NFA) renamed to qs'
-isomorphismN n@(NFA q moves s0 f) qs' =
+isomorphismN n@(NFA _ moves s0 f) qs' =
     let qs = states n 
         h = zip (toList qs) (toList qs') -- new labels
         h_each = \x -> fromJust $ lookup x h

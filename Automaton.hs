@@ -1,7 +1,7 @@
 module Automaton where 
 import Data.List as List ( group, intercalate, sort, (\\) )
 import Data.Set as Set
-    ( Set, empty, fromList, map, null, toList, union, unions )
+    ( Set, empty, fromList, map, null, toList )
 
 class Automaton at where 
     states :: at a -> Set a
