@@ -30,12 +30,12 @@ nmove a c b = ((a, Just c), b)
 
 instance (Show a, Ord a) =>  Show (NFA a) where 
     show (NFA q delta s0 f) = 
-        "Q: " ++ show (toList q) ++ " \n" ++
-        "delta: " ++ del_str ++ " \n" ++ 
-        "S0: " ++ show (toList s0) ++ " \n" ++
-        "F: " ++ show (toList f) 
+        "Q: "       ++ show (toList q)  ++ " \n" ++
+        "delta: "   ++ del_str          ++ " \n" ++ 
+        "S0: "      ++ show (toList s0) ++ " \n" ++
+        "F: "       ++ show (toList f) 
         where 
-            del_show ((q, Just c), ps) =
+            del_show ((q, Just c), ps)  =
                 "(" ++ show q ++ " - " ++ [c] ++ " -> " 
                 ++ show_states ps ++ ")"
             del_show ((q, Nothing), ps) = 
@@ -45,11 +45,11 @@ instance (Show a, Ord a) =>  Show (NFA a) where
 
 
 instance Automaton NFA where
-    states = statesN
-    start = startN 
-    final = finalN 
-    delta = deltaN
-    accepts = acceptsN
+    states      = statesN
+    start       = startN 
+    final       = finalN 
+    delta       = deltaN
+    accepts     = acceptsN
     isomorphism = isomorphismN
     alphabet_of = alphabet_of_nfa
 
@@ -67,10 +67,10 @@ delta_star nfa = delta_star' (startN nfa) nfa
 
 delta_star' :: (Ord a, Show a) => 
     Set a -> NFA a -> String -> Maybe (Set a)
-delta_star' fs n [] = Just (unions (set_map (epsilon_closure n) fs))
+delta_star' fs n []         = Just (unions (set_map (epsilon_closure n) fs))
 delta_star' qs nfa (c : cs) = 
-    let qs' = unions (set_map (epsilon_closure nfa) qs)
-        next = unions (set_map (deltaN nfa c) qs')
+    let qs'     = unions (set_map (epsilon_closure nfa) qs)
+        next    = unions (set_map (deltaN nfa c) qs')
     in if set_null next then Nothing else 
         delta_star' next nfa cs
 
@@ -121,35 +121,36 @@ there is a move `q c r`
 -}
 elim_epsilon :: (Show a, Ord a) => NFA a -> NFA a 
 elim_epsilon n@(NFA q ms q0 f) = 
-    let nq0 =  unions (set_map (epsilon_closure n) q0)
-        nf = [p | q <- toList f, ((p, Nothing), qs) <- ms, 
-            q `member` qs]
-        f' = f `union` (fromList nf )
+    let nq0                 =  unions (set_map (epsilon_closure n) q0)
+        nf                  = [p | q <- toList f, ((p, Nothing), qs) <- ms, 
+                                q `member` qs]
+        f'                  = f `union` (fromList nf )
 
         deterministic_moves = [((p, Just c), q') | 
-            ((p, Just c), q) <- ms,
-            let q' = unions (set_map (epsilon_closure n) q)]
+                            ((p, Just c), q) <- ms,
+                            let q' = unions (set_map (epsilon_closure n) q)]
 
-        new_moves = [((p, Just c), r) | ((p, Nothing), qs) <- ms, 
-            q <- toList $ unions $ set_map (epsilon_closure n) qs, 
-            ((q', Just c), r) <- ms, q == q'
-            ]
+        new_moves           = [((p, Just c), r) | ((p, Nothing), qs) <- ms, 
+                            q <- toList $ unions $ set_map (epsilon_closure n) qs, 
+                            ((q', Just c), r) <- ms, q == q'
+                            ]
     in NFA q (deterministic_moves ++ new_moves) nq0 f'
 
 isomorphismN :: (Show a, Ord a, Show b, Ord b) => 
     NFA a -> Set b -> NFA b 
 -- return an isomorphic NFA with states(NFA) renamed to qs'
 isomorphismN n@(NFA _ moves s0 f) qs' =
-    let qs = states n 
-        h = zip (toList qs) (toList qs') -- new labels
-        h_each = \x -> fromJust $ lookup x h
+    let qs      = states n 
+        h       = zip (toList qs) (toList qs') -- new labels
+        h_each  = \x -> fromJust $ lookup x h
 
-        moves' = [((hp, c), hq) | ((p, c), q) <- moves, 
-            let Just hp = lookup p h, let hq = (set_map h_each q)]
-            ++ 
-            [emove hp hq | ((p, Nothing), q) <- moves, 
-            let Just hp = lookup p h, let hq = (set_map h_each q)]
-        f' = set_map h_each f 
-        s0' = set_map h_each s0 
+        moves'  = [((hp, c), hq) | ((p, c), q) <- moves, 
+                let Just hp = lookup p h, let hq = (set_map h_each q)]
+                ++ 
+                [emove hp hq | ((p, Nothing), q) <- moves, 
+                let Just hp = lookup p h, let hq = (set_map h_each q)
+                ]
+        f'      = set_map h_each f 
+        s0'     = set_map h_each s0 
 
     in NFA qs' moves' s0' f'

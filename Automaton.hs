@@ -4,13 +4,13 @@ import Data.Set as Set
     ( Set, empty, fromList, map, null, toList )
 
 class Automaton at where 
-    states :: at a -> Set a
-    start :: at a -> Set a
-    final :: at a -> Set a
-    accepts :: (Ord a, Show a) => at a -> String -> Bool
-    delta :: (Ord a, Show a) => at a -> Char -> a -> Set a
+    states      :: at a -> Set a
+    start       :: at a -> Set a
+    final       :: at a -> Set a
+    accepts     :: (Ord a, Show a) => at a -> String -> Bool
+    delta       :: (Ord a, Show a) => at a -> Char -> a -> Set a
     isomorphism :: (Show a, Ord a, Show b, Ord b) => 
-        at a -> Set b -> at b
+                    at a -> Set b -> at b
     alphabet_of :: at a -> [Char]
 
 
@@ -25,9 +25,9 @@ differentiate_states ::
 -- map the states to distinct ints
 -- return the lengths and new distinct automata
 differentiate_states a1 a2 = 
-    let (l1, l2) = (ls a1, ls a2) where ls = length . states 
-        a1' = isomorphism a1 (fromList [1 .. l1])
-        a2' = isomorphism a2 (fromList [l1 + 1 .. l1 + l2])
+    let (l1, l2)    = (ls a1, ls a2) where ls = length . states 
+        a1'         = isomorphism a1 (fromList [1 .. l1])
+        a2'         = isomorphism a2 (fromList [l1 + 1 .. l1 + l2])
     in (l1, l2, a1', a2')
 
 dfs :: (Show a, Ord a, Automaton at) => 
@@ -35,8 +35,8 @@ dfs :: (Show a, Ord a, Automaton at) =>
 -- find all reachable states in Automaton d
 dfs d adjacent alphabet = fromList $ reverse $ loop s s
     where 
-        loop visited [] = visited 
-        loop visited (v : vs) = 
+        loop visited []         = visited 
+        loop visited (v : vs)   = 
             let ns = adjacent d alphabet v \\ visited 
             in loop (ns ++ visited) (ns ++ vs)
         s = toList $ start d

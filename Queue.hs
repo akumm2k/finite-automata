@@ -1,7 +1,7 @@
 module Queue where
 
 class Queue q where
-    empty :: q a 
+    empty   :: q a 
     enqueue :: a -> q a -> q a 
     dequeue :: q a -> Maybe (a, q a)
     isEmpty :: q a -> Bool

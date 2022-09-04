@@ -36,11 +36,11 @@ instance Show a => Show (DMove a) where
             ++ show q ++ ")"
 
 instance Automaton DFA where
-    states = statesD
-    start = startD 
-    final = finalD 
-    delta = deltaD 
-    accepts = acceptsD
+    states      = statesD
+    start       = startD 
+    final       = finalD 
+    delta       = deltaD 
+    accepts     = acceptsD
     isomorphism = isomorphismD
     alphabet_of = alphabet_of_dfa
 
@@ -63,8 +63,8 @@ delta_star dfa = delta_star' s dfa
     where [s] = toList $ start dfa
 
 delta_star' :: (Ord a, Show a) => a -> DFA a -> String -> Maybe a 
-delta_star' f _ [] = Just f 
-delta_star' q dfa (c : cs) = 
+delta_star' f _ []          = Just f 
+delta_star' q dfa (c : cs)  = 
     let next = delta dfa c q
     in case toList next of 
         [] -> Nothing 
@@ -92,15 +92,17 @@ isomorphismD :: (Show a, Ord a, Show b, Ord b) =>
     DFA a -> Set b -> DFA b
 -- return an isomorphic dfa w/ states(DFA) renamed to qs'
 isomorphismD d@(DFA _ moves q0 f) qs'' = 
-    let qs = toList $ states d
-        qs' = toList qs''
-        h = zip qs qs'
-        [q0'] = toList q0
-        moves' = [(DMove hp c hq) | 
+    let qs          = toList $ states d
+        qs'         = toList qs''
+        h           = zip qs qs'
+        [q0']       = toList q0
+        moves'      = [(DMove hp c hq) | 
             (DMove p c q) <- moves, 
             let Just hp = (lookup p h), let Just hq = lookup q h]
-        Just q0'' = lookup q0' h
-        f' = fromList [x' | x <- toList f, let Just x' = lookup x h]
+
+        Just q0''   = lookup q0' h
+        f'          = fromList [x' | x <- toList f, let Just x' = lookup x h]
+
     in DFA (fromList qs') moves' (singleton q0'') f'
 
 {-
@@ -115,27 +117,27 @@ update transitions based on the equivalent states
 -}
 minimize :: (Ord a, Show a) => DFA a -> DFA Int
 minimize d = 
-    let alphabet = alphabet_of d
+    let alphabet    = alphabet_of d
 
         -- remove unreachable states
-        reachable = dfs d adjacentD alphabet
+        reachable   = dfs d adjacentD alphabet
         unreachable = states d `difference` reachable
-        fin = final d `difference` unreachable
-        non_final = reachable `difference` fin
-        n = length reachable
-        p1 = (fromList [non_final, fin]) `difference` 
+        fin         = final d `difference` unreachable
+        non_final   = reachable `difference` fin
+        n           = length reachable
+        p1          = (fromList [non_final, fin]) `difference` 
             (fromList [empty])
 
         -- get equivalent states
-        (l, ps) = state_partition d alphabet 
+        (l, ps)     = state_partition d alphabet 
             (toList p1) (length p1) n n 0
 
         -- build minimized dfa
-        q = [0 .. l - 1] 
-        p_to_id = zip ps q
-        delta = update_delta d reachable p_to_id  
-        f = fromList [get_id p_to_id f| f <- toList fin]
-        q0 = fromList [get_id p_to_id $ head (toList $ start d)]
+        q           = [0 .. l - 1] 
+        p_to_id     = zip ps q
+        delta       = update_delta d reachable p_to_id  
+        f           = fromList [get_id p_to_id f| f <- toList fin]
+        q0          = fromList [get_id p_to_id $ head (toList $ start d)]
     in DFA (fromList q) delta q0 f 
 
 adjacentD :: (Show a, Ord a) => DFA a -> String -> a -> [a]
@@ -180,9 +182,9 @@ state_partition _ _ ps ps_len num_states i j
     | j >= i || ps_len == num_states = (ps_len, ps)
 
 state_partition d alphabet ps ps_len num_states i j = 
-    let x = [split_part d part ps ps_len alphabet | part <- ps]
-        ps' = concat $ snd <$> x 
-        added_len = sum $ fst <$> x
+    let x           = [split_part d part ps ps_len alphabet | part <- ps]
+        ps'         = concat $ snd <$> x 
+        added_len   = sum $ fst <$> x
     in (state_partition d alphabet ps' (ps_len + added_len) 
         num_states i (j + 1))
 
@@ -202,11 +204,14 @@ and avoid using `length`
 split_part :: (Show a, Ord a) => 
     DFA a -> Set a -> [(Set a)] -> Int -> String -> (Int, [Set a])
 split_part dfa part parts parts_len alphabet =
-    let new_parts = [(p, ids) | p <- toList part, 
+    
+    let new_parts   = [(p, ids) | p <- toList part, 
             let ids = [part_id q | c <- alphabet, 
-                    let q = delta dfa c p]]
-        splits =  snd <$> reverse_dict new_parts
-        added_len = length splits - 1
+                    let q = delta dfa c p]
+            ]
+        splits      =  snd <$> reverse_dict new_parts
+        added_len   = length splits - 1
+
     in (added_len, splits)
     where 
         parts_arr = listArray (0, parts_len - 1) parts

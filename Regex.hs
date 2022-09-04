@@ -1,12 +1,12 @@
 module Regex where 
 
 data Reg =  
-    Epsilon |
-    Literal Char |
-    Or Reg Reg |        -- (r1|r2)
-    Then Reg Reg |      -- r1.r2
-    Opt Reg |           -- r?
-    Star Reg            -- r*
+    Epsilon         |
+    Literal Char    |
+    Or Reg Reg      | -- (r1|r2)
+    Then Reg Reg    | -- r1.r2
+    Opt Reg         | -- r?
+    Star Reg          -- r*
     deriving (Eq)
     
 instance Show Reg where
@@ -75,8 +75,8 @@ factor_ext :: (Reg, String) -> (Reg, String)
 -- '*' and '?' bind to the last reg
 factor_ext (Then a b, ('*' : s)) = (Then a (Star b), s) 
 factor_ext (Then a b, ('?' : s)) = (Then a (Opt b), s)
-factor_ext (re, ('*' : s)) = (Star re, s)
-factor_ext (re, ('?' : s)) = (Opt re, s)
+factor_ext (re, ('*' : s))       = (Star re, s)
+factor_ext (re, ('?' : s))       = (Opt re, s)
 
 factor_ext (re, (')' : s)) = 
     -- propagate `)` back to regexp_ext
@@ -128,7 +128,7 @@ regexp_ext (re, ('|' : s)) =
     let (re2, t) = term s 
     in regexp_ext (Or re re2, t)
 regexp_ext (re, "") = (re, "")
-regexp_ext _ = error "bad syntax"
+regexp_ext _        = error "bad syntax"
 
 -- get_reg str: parse str to get a Reg value
 get_reg :: String -> Reg 
@@ -148,14 +148,14 @@ left_derivative :: Reg -> String -> [String]
 left_derivative Epsilon s = [s]
 
 left_derivative (Literal c) (d : s) | (c == d) = [s]
-left_derivative (Literal _) _ = []
+left_derivative (Literal _) _                  = []
 
-left_derivative (Or a b) s = 
+left_derivative (Or a b) s   = 
     left_derivative a s ++ left_derivative b s 
 left_derivative (Then a b) s = 
     [u | t <- left_derivative a s, u <- left_derivative b t] 
 
-left_derivative (Opt a) s = left_derivative a s ++ [s]
+left_derivative (Opt a) s  = left_derivative a s ++ [s]
 left_derivative (Star a) s = 
     let m = remove_item s (left_derivative a s) 
         -- rm s to prevent inf recursion
@@ -189,7 +189,7 @@ matches s re_str =
 -- test_reg_parse: test if the precedence is enforeced correctly 
 test_reg_parse :: [String]
 test_reg_parse = 
-    let test_strs = ["(aa)*", "a(aa)*", "*a?", "xy(a?|b*c)cd"]
+    let test_strs  = ["(aa)*", "a(aa)*", "*a?", "xy(a?|b*c)cd"]
         test_strs2 = ["a??", "a**", "(a*)*", "?a??", "axy(bc?d*|)g"]
     in [re ++ " -> " ++ show (get_reg re) | 
         re <- test_strs ++ test_strs2]

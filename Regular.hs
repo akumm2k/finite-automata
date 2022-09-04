@@ -20,7 +20,7 @@ Reg to nfa
 reg_to_nfa :: String -> NFA Int 
 reg_to_nfa s = nfa
     where 
-        r = get_reg s
+        r        = get_reg s
         (nfa, _) = reg_to_nfa' r 0
 {-
 reg_to_nfa' takes a regular expression and the next available ID.  
@@ -35,16 +35,16 @@ reg_to_nfa' Epsilon i = (NFA z [] z z, i + 1)
 reg_to_nfa' (Literal c) i = 
         (NFA q ms (singleton i) (singleton j), j + 1)
     where 
-        j = i + 1
-        q = (fromList [i, j])
+        j  = i + 1
+        q  = (fromList [i, j])
         ms = [(nmove i c (singleton j))]
     -- Literal c: NFA [i, j] [i - c -> j] [j]
 
 reg_to_nfa' (Or r1 r2) i = 
     --  Or r1 r2: new start -\-> [start n1, start n2]
-    let (n1', i') = reg_to_nfa' r1 (i + 1)
+    let (n1', i')  = reg_to_nfa' r1 (i + 1)
         (n2', i'') = reg_to_nfa' r2 i'
-        eps_move =  [emove i (start n1' `union` start n2')]
+        eps_move   =  [emove i (start n1' `union` start n2')]
         nfa = NFA (fromList [i + 1 .. i'' - 1])
                 (concat [eps_move, movesN n1', movesN n2']) 
                 (singleton i) (final n1' `union` final n2')
@@ -52,9 +52,9 @@ reg_to_nfa' (Or r1 r2) i =
 
 reg_to_nfa' (Then r1 r2) i = 
     -- Then r1 r2: final n1 -\-> start n2
-    let (n1', i') = reg_to_nfa' r1 i
+    let (n1', i')  = reg_to_nfa' r1 i
         (n2', i'') = reg_to_nfa' r2 i'
-        emoves =  [emove en1 (start n2') | en1 <- toList $ final n1']
+        emoves     =  [emove en1 (start n2') | en1 <- toList $ final n1']
     in 
         (NFA (fromList [i .. i'' - 1]) 
             (nub (emoves ++ movesN n1' ++ movesN n2'))
@@ -62,17 +62,17 @@ reg_to_nfa' (Then r1 r2) i =
 
 reg_to_nfa' (Opt r) i = 
     -- Opt r1: new start -\-> start n1 | new start \in final
-    let (n, i') = reg_to_nfa' r (i + 1)
-        eps_move = [emove i (start n)]
+    let (n, i')   = reg_to_nfa' r (i + 1)
+        eps_move  = [emove i (start n)]
         all_moves = nub (eps_move ++ movesN n)
     in (NFA (fromList [i .. i' - 1]) all_moves 
         (singleton i) (singleton i `union` final n), i')
 
 reg_to_nfa' (Star r) i = 
     -- Star r1: new start <-\-> final n1, new start -\-> start n1
-    let (n, i') = reg_to_nfa' r (i + 1)
-        emoves =  ([emove i (start n `union` final n)] 
-            ++ [emove f (singleton i) | f <- toList $ final n])
+    let (n, i')   = reg_to_nfa' r (i + 1)
+        emoves    =  ([emove i (start n `union` final n)] 
+                    ++ [emove f (singleton i) | f <- toList $ final n])
         all_moves = nub (emoves ++ movesN n)
     in (NFA (fromList [i .. i' - 1]) all_moves 
         (singleton i) (final n), i')
@@ -136,23 +136,22 @@ subset_constr' queue _ _ visited moves
     | isEmpty queue = (visited, moves)
 
 subset_constr' queue nfa alphabet visited moves = 
-    let Just (states, queue') = dequeue queue
-        new_moves_n_states =  
-            [(DMove states c ps, ps) | 
-            c <- alphabet, let ps = unions 
-                                [p | q <- toList states, 
-                                let p = delta nfa c q, 
-                                p /= empty_set], 
-            ps /= empty_set
-            ] -- compute new transitions skipping empty ones
-        new_states = fromList $ snd <$> new_moves_n_states
-        moves' = fst <$> new_moves_n_states
-        all_moves = nub (moves ++ moves')
-        visited' = 
-             (singleton states) `union` visited
+    let Just (states, queue')   = dequeue queue
+        new_moves_n_states      =  
+                                [(DMove states c ps, ps) | 
+                                c <- alphabet, let ps = unions 
+                                                    [p | q <- toList states, 
+                                                    let p = delta nfa c q, 
+                                                    p /= empty_set], 
+                                ps /= empty_set
+                                ] -- compute new transitions skipping empty ones
+        new_states              = fromList $ snd <$> new_moves_n_states
+        moves'                  = fst <$> new_moves_n_states
+        all_moves               = nub (moves ++ moves')
+        visited'                = (singleton states) `union` visited
         
-        new_queue = foldr enqueue queue' 
-            (new_states `difference` visited')
+        new_queue               = foldr enqueue queue' 
+                                (new_states `difference` visited')
     in (subset_constr' new_queue nfa alphabet 
             visited' all_moves)
 
